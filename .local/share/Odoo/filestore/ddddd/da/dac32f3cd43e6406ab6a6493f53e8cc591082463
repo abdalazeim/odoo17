@@ -1,0 +1,78 @@
+
+/* /web/static/src/polyfills/object.js */
+if(!Object.hasOwn){Object.hasOwn=(obj,key)=>Object.prototype.hasOwnProperty.call(obj,key);};
+
+/* /web/static/src/polyfills/array.js */
+if(!Array.prototype.at){Object.defineProperty(Array.prototype,"at",{enumerable:false,value:function(index){if(index>=0){return this[index];}
+return this[this.length+index];}});};
+
+/* /web/static/src/module_loader.js */
+(function(){"use strict";class ModuleLoader{factories=new Map();jobs=new Set();failed=new Set();modules=new Map();bus=new EventTarget();checkErrorProm=null;define(name,deps,factory){if(typeof name!=="string"){throw new Error(`Invalid name definition: ${name} (should be a string)"`);}
+if(!(deps instanceof Array)){throw new Error(`Dependencies should be defined by an array: ${deps}`);}
+if(typeof factory!=="function"){throw new Error(`Factory should be defined by a function ${factory}`);}
+if(!this.factories.has(name)){this.factories.set(name,{deps,fn:factory,ignoreMissingDeps:globalThis.__odooIgnoreMissingDependencies,});this.addJob(name);this.checkErrorProm||=Promise.resolve().then(()=>{this.checkAndReportErrors();this.checkErrorProm=null;});}}
+addJob(name){this.jobs.add(name);this.startModules();}
+findJob(){for(const job of this.jobs){if(this.factories.get(job).deps.every((dep)=>this.modules.has(dep))){return job;}}
+return null;}
+startModules(){let job;while((job=this.findJob())){this.startModule(job);}}
+startModule(name){const require=(name)=>this.modules.get(name);this.jobs.delete(name);const factory=this.factories.get(name);let value=null;try{value=factory.fn(require);}catch(error){this.failed.add(name);throw new Error(`Error while loading "${name}":\n${error}`);}
+this.modules.set(name,value);this.bus.dispatchEvent(new CustomEvent("module-started",{detail:{moduleName:name,module:value}}));}
+findErrors(){const dependencyGraph=new Map();for(const job of this.jobs){dependencyGraph.set(job,this.factories.get(job).deps);}
+function visitJobs(jobs,visited=new Set()){for(const job of jobs){const result=visitJob(job,visited);if(result){return result;}}
+return null;}
+function visitJob(job,visited){if(visited.has(job)){const jobs=Array.from(visited).concat([job]);const index=jobs.indexOf(job);return jobs.slice(index).map((j)=>`"${j}"`).join(" => ");}
+const deps=dependencyGraph.get(job);return deps?visitJobs(deps,new Set(visited).add(job)):null;}
+const missing=new Set();for(const job of this.jobs){const factory=this.factories.get(job);if(factory.ignoreMissingDeps){continue;}
+for(const dep of factory.deps){if(!this.factories.has(dep)){missing.add(dep);}}}
+return{failed:[...this.failed],cycle:visitJobs(this.jobs),missing:[...missing],unloaded:[...this.jobs].filter((j)=>!this.factories.get(j).ignoreMissingDeps),};}
+async checkAndReportErrors(){const{failed,cycle,missing,unloaded}=this.findErrors();if(!failed.length&&!unloaded.length){return;}
+function domReady(cb){if(document.readyState==="complete"){cb();}else{document.addEventListener("DOMContentLoaded",cb);}}
+function list(heading,names){const frag=document.createDocumentFragment();if(!names||!names.length){return frag;}
+frag.textContent=heading;const ul=document.createElement("ul");for(const el of names){const li=document.createElement("li");li.textContent=el;ul.append(li);}
+frag.appendChild(ul);return frag;}
+domReady(()=>{while(document.body.childNodes.length){document.body.childNodes[0].remove();}
+const container=document.createElement("div");container.className="o_module_error position-fixed w-100 h-100 d-flex align-items-center flex-column bg-white overflow-auto modal";container.style.zIndex="10000";const alert=document.createElement("div");alert.className="alert alert-danger o_error_detail fw-bold m-auto";container.appendChild(alert);alert.appendChild(list("The following modules failed to load because of an error, you may find more information in the devtools console:",failed));alert.appendChild(list("The following modules could not be loaded because they form a dependency cycle:",cycle&&[cycle]));alert.appendChild(list("The following modules are needed by other modules but have not been defined, they may not be present in the correct asset bundle:",missing));alert.appendChild(list("The following modules could not be loaded because they have unmet dependencies, this is a secondary error which is likely caused by one of the above problems:",unloaded));document.body.appendChild(container);});}}
+if(!globalThis.odoo){globalThis.odoo={};}
+const odoo=globalThis.odoo;if(odoo.debug&&!new URLSearchParams(location.search).has("debug")){odoo.debug="";}
+const loader=new ModuleLoader();odoo.define=loader.define.bind(loader);odoo.loader=loader;})();;
+
+/* /web/static/src/session.js */
+odoo.define('@web/session',[],function(require){'use strict';let __exports={};const session=__exports.session=odoo.__session_info__||{};delete odoo.__session_info__;return __exports;});;
+
+/* /web/static/src/core/browser/cookie.js */
+odoo.define('@web/core/browser/cookie',[],function(require){'use strict';let __exports={};const COOKIE_TTL=24*60*60*365;const cookie=__exports.cookie={get _cookieMonster(){return document.cookie;},set _cookieMonster(value){document.cookie=value;},get(str){const parts=this._cookieMonster.split("; ");for(const part of parts){const[key,value]=part.split(/=(.*)/);if(key===str){return value||"";}}},set(key,value,ttl=COOKIE_TTL){let fullCookie=[];if(value!==undefined){fullCookie.push(`${key}=${value}`);}
+fullCookie=fullCookie.concat(["path=/",`max-age=${ttl}`]);this._cookieMonster=fullCookie.join("; ");},delete(key){this.set(key,"kill",0);},};return __exports;});;
+
+/* /web/static/src/legacy/js/core/minimal_dom.js */
+odoo.define('@web/legacy/js/core/minimal_dom',[],function(require){'use strict';let __exports={};const DEBOUNCE=__exports.DEBOUNCE=400;const BUTTON_HANDLER_SELECTOR=__exports.BUTTON_HANDLER_SELECTOR='a, button, input[type="submit"], input[type="button"], .btn';__exports.makeAsyncHandler=makeAsyncHandler;function makeAsyncHandler(fct,preventDefault,stopPropagation){const stopImmediatePropagation=this&&this.__makeAsyncHandler_stopImmediatePropagation;let pending=false;function _isLocked(){return pending;}
+function _lock(){pending=true;}
+function _unlock(){pending=false;}
+return function(ev){if(preventDefault===true||preventDefault&&preventDefault()){ev.preventDefault();}
+if(stopPropagation===true||stopPropagation&&stopPropagation()){ev.stopPropagation();}
+if(stopImmediatePropagation===true||stopImmediatePropagation&&stopImmediatePropagation()){ev.stopImmediatePropagation();}
+if(_isLocked()){return;}
+_lock();const result=fct.apply(this,arguments);Promise.resolve(result).then(_unlock,_unlock);return result;};}
+__exports.makeButtonHandler=makeButtonHandler;function makeButtonHandler(fct){const preventDefault=this&&this.__makeButtonHandler_preventDefault;const stopPropagation=this&&this.__makeButtonHandler_stopPropagation;const stopImmediatePropagation=this&&this.__makeButtonHandler_stopImmediatePropagation;fct=makeAsyncHandler.call({'__makeAsyncHandler_stopImmediatePropagation':stopImmediatePropagation,},fct,preventDefault,stopPropagation);return function(ev){const result=fct.apply(this,arguments);const buttonEl=ev.target&&ev.target.closest&&ev.target.closest(BUTTON_HANDLER_SELECTOR);if(!(buttonEl instanceof HTMLElement)){return result;}
+buttonEl.classList.add('pe-none');Promise.resolve(DEBOUNCE&&new Promise(r=>setTimeout(r,DEBOUNCE))).then(function(){buttonEl.classList.remove('pe-none');const restore=addButtonLoadingEffect(buttonEl);return Promise.resolve(result).then(restore,restore);});return result;};}
+__exports.addButtonLoadingEffect=addButtonLoadingEffect;function addButtonLoadingEffect(btnEl){if(!(btnEl instanceof HTMLElement)){return()=>{};}
+btnEl.classList.add('o_website_btn_loading','disabled','pe-none');btnEl.disabled=true;const loaderEl=document.createElement('span');loaderEl.classList.add('fa','fa-refresh','fa-spin','me-2');btnEl.prepend(loaderEl);return()=>{btnEl.classList.remove('o_website_btn_loading','disabled','pe-none');btnEl.disabled=false;loaderEl.remove();};}
+return __exports;});;
+
+/* /web/static/src/legacy/js/public/lazyloader.js */
+odoo.define('@web/legacy/js/public/lazyloader',['@web/legacy/js/core/minimal_dom'],function(require){'use strict';let __exports={};const{BUTTON_HANDLER_SELECTOR,makeAsyncHandler,makeButtonHandler,}=require('@web/legacy/js/core/minimal_dom');let allScriptsLoadedResolve=null;const _allScriptsLoaded=new Promise(resolve=>{allScriptsLoadedResolve=resolve;}).then(stopWaitingLazy);const retriggeringWaitingProms=[];async function waitForLazyAndRetrigger(ev){const targetEl=ev.target;await _allScriptsLoaded;await Promise.all(retriggeringWaitingProms);setTimeout(()=>{if(targetEl.isConnected){targetEl.dispatchEvent(new ev.constructor(ev.type,ev));}},0);}
+const loadingEffectHandlers=[];function registerLoadingEffectHandler(el,type,handler){el.addEventListener(type,handler,{capture:true});loadingEffectHandlers.push({el,type,handler});}
+let waitingLazy=false;function waitLazy(){if(waitingLazy){return;}
+waitingLazy=true;document.body.classList.add('o_lazy_js_waiting');const mainEl=document.getElementById('wrapwrap')||document.body;const loadingEffectButtonEls=[...mainEl.querySelectorAll(BUTTON_HANDLER_SELECTOR)].filter(el=>{return!el.classList.contains('o_no_wait_lazy_js')&&!(el.nodeName==='A'&&el.href&&el.getAttribute('href')!=='#');});const loadingEffectEventTypes=['mouseover','mouseenter','mousedown','mouseup','click','mouseout','mouseleave'];for(const buttonEl of loadingEffectButtonEls){for(const eventType of loadingEffectEventTypes){const loadingEffectHandler=eventType==='click'?makeButtonHandler.call({'__makeButtonHandler_preventDefault':true,'__makeButtonHandler_stopImmediatePropagation':true,},waitForLazyAndRetrigger):makeAsyncHandler.call({'__makeAsyncHandler_stopImmediatePropagation':true,},waitForLazyAndRetrigger,true);registerLoadingEffectHandler(buttonEl,eventType,loadingEffectHandler);}}
+for(const formEl of document.querySelectorAll('form:not(.o_no_wait_lazy_js)')){registerLoadingEffectHandler(formEl,'submit',ev=>{ev.preventDefault();ev.stopImmediatePropagation();});}}
+function stopWaitingLazy(){if(!waitingLazy){return;}
+waitingLazy=false;document.body.classList.remove('o_lazy_js_waiting');for(const{el,type,handler}of loadingEffectHandlers){el.removeEventListener(type,handler,{capture:true});}}
+if(document.readyState!=='loading'){waitLazy();}else{document.addEventListener('DOMContentLoaded',function(){waitLazy();});}
+if(document.readyState==='complete'){setTimeout(_loadScripts,0);}else{window.addEventListener('load',function(){setTimeout(_loadScripts,0);});}
+function _loadScripts(scripts,index){if(scripts===undefined){scripts=document.querySelectorAll('script[data-src]');}
+if(index===undefined){index=0;}
+if(index>=scripts.length){allScriptsLoadedResolve();return;}
+const script=scripts[index];script.addEventListener('load',_loadScripts.bind(this,scripts,index+1));script.setAttribute('defer','defer');script.src=script.dataset.src;script.removeAttribute('data-src');}
+__exports[Symbol.for("default")]={loadScripts:_loadScripts,allScriptsLoaded:_allScriptsLoaded,registerPageReadinessDelay:retriggeringWaitingProms.push.bind(retriggeringWaitingProms),};return __exports;});;
+
+/* /web_editor/static/src/js/frontend/loader_loading.js */
+(function(){'use strict';document.addEventListener('DOMContentLoaded',()=>{var textareaEls=document.querySelectorAll('textarea.o_wysiwyg_loader');for(var i=0;i<textareaEls.length;i++){var textarea=textareaEls[i];var wrapper=document.createElement('div');wrapper.classList.add('position-relative','o_wysiwyg_textarea_wrapper');var loadingElement=document.createElement('div');loadingElement.classList.add('o_wysiwyg_loading');var loadingIcon=document.createElement('i');loadingIcon.classList.add('text-600','text-center','fa','fa-circle-o-notch','fa-spin','fa-2x');loadingElement.appendChild(loadingIcon);wrapper.appendChild(loadingElement);textarea.parentNode.insertBefore(wrapper,textarea);wrapper.insertBefore(textarea,loadingElement);}});})();

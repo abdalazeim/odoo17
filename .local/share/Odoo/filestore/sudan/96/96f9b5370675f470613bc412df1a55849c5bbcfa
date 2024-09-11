@@ -1,0 +1,5272 @@
+
+/*********************************************************************
+*  Filepath: /base/static/tests/test_ir_model_fields_translation.js  *
+*  Lines: 55                                                         *
+*********************************************************************/
+odoo.define('@base/../tests/test_ir_model_fields_translation', ['@web/core/registry', '@web_tour/tour_service/tour_utils'], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module **/
+
+const { registry } = require("@web/core/registry");
+const { stepUtils } = require("@web_tour/tour_service/tour_utils");
+function checkLoginColumn(translation) {
+    return [
+        stepUtils.showAppsMenuItem(), {
+            content: "Settings",
+            trigger: 'a[data-menu-xmlid="base.menu_administration"]',
+            run: 'click',
+        }, {
+            content: "Open Users & Companies",
+            trigger: '[data-menu-xmlid="base.menu_users"]',
+            run: "click",
+        }, {
+            content: "Open Users",
+            trigger: '[data-menu-xmlid="base.menu_action_res_users"]',
+            run: "click",
+        }, {
+            content: `Login column should be ${translation}`,
+            trigger: `[data-name="login"] span:contains("${translation}")`,
+            isCheck: true,
+        }
+    ]
+}
+
+registry.category("web_tour.tours").add('ir_model_fields_translation_en_tour', {
+    test: true,
+    url: '/web',
+    steps: () => checkLoginColumn('Login')
+});
+
+registry.category("web_tour.tours").add('ir_model_fields_translation_en_tour2', {
+    test: true,
+    url: '/web',
+    steps: () => checkLoginColumn('Login2')
+});
+
+registry.category("web_tour.tours").add('ir_model_fields_translation_fr_tour', {
+    test: true,
+    url: '/web',
+    steps: () => checkLoginColumn('Identifiant')
+});
+
+registry.category("web_tour.tours").add('ir_model_fields_translation_fr_tour2', {
+    test: true,
+    url: '/web',
+    steps: () => checkLoginColumn('Identifiant2')
+});
+
+return __exports;
+});
+;
+
+/***************************************************
+*  Filepath: /web/static/tests/helpers/cleanup.js  *
+*  Lines: 121                                      *
+***************************************************/
+odoo.define('@web/../tests/helpers/cleanup', [], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module **/
+
+// -----------------------------------------------------------------------------
+// Cleanup
+// -----------------------------------------------------------------------------
+
+const cleanups = [];
+
+/**
+ * Register a cleanup callback that will be executed whenever the current test
+ * is done.
+ *
+ * - the cleanups will be executed in reverse order
+ * - they will be executed even if the test fails/crashes
+ *
+ * @param {Function} callback
+ */
+__exports.registerCleanup = registerCleanup; function registerCleanup(callback) {
+    cleanups.push(callback);
+}
+
+if (window.QUnit) {
+    QUnit.on("OdooAfterTestHook", (info) => {
+        if (QUnit.config.debug) {
+            return;
+        }
+        let cleanup;
+        // note that this calls the cleanup callbacks in reverse order!
+        while ((cleanup = cleanups.pop())) {
+            try {
+                cleanup(info);
+            } catch (error) {
+                console.error(error);
+            }
+        }
+    });
+
+    // -----------------------------------------------------------------------------
+    // Check leftovers
+    // -----------------------------------------------------------------------------
+
+    /**
+     * List of elements tolerated in the body after a test. The property "keep"
+     * prevents the element from being removed (typically: qunit suite elements).
+     */
+    const validElements = [
+        // always in the body:
+        { tagName: "DIV", attr: "id", value: "qunit", keep: true },
+        { tagName: "DIV", attr: "id", value: "qunit-fixture", keep: true },
+        // shouldn't be in the body after a test but are tolerated:
+        { tagName: "SCRIPT", attr: "id", value: "" },
+        { tagName: "DIV", attr: "class", value: "o_notification_manager" },
+        { tagName: "DIV", attr: "class", value: "tooltip fade bs-tooltip-auto" },
+        { tagName: "DIV", attr: "class", value: "tooltip fade bs-tooltip-auto show" },
+        { tagName: "DIV", attr: "class", value: "tooltip tooltip-field-info fade bs-tooltip-auto" },
+        {
+            tagName: "DIV",
+            attr: "class",
+            value: "tooltip tooltip-field-info fade bs-tooltip-auto show",
+        },
+        { tagName: "SPAN", attr: "class", value: "select2-hidden-accessible" },
+
+        // Due to a Document Kanban bug (already present in 12.0)
+        { tagName: "DIV", attr: "class", value: "ui-helper-hidden-accessible" },
+        {
+            tagName: "UL",
+            attr: "class",
+            value: "ui-menu ui-widget ui-widget-content ui-autocomplete ui-front",
+        },
+        {
+            tagName: "UL",
+            attr: "class",
+            value: "ui-menu ui-widget ui-widget-content ui-autocomplete dropdown-menu ui-front", // many2ones
+        },
+    ];
+
+    /**
+     * After each test, we check that there is no leftover in the DOM.
+     *
+     * Note: this event is not QUnit standard, we added it for this specific use case.
+     * As a payload, an object with keys 'moduleName' and 'testName' is provided. It
+     * is used to indicate the test that left elements in the DOM, when it happens.
+     */
+    QUnit.on("OdooAfterTestHook", function (info) {
+        if (QUnit.config.debug) {
+            return;
+        }
+        const failed = info.testReport.getStatus() === "failed";
+        const toRemove = [];
+        // check for leftover elements in the body
+        for (const bodyChild of document.body.children) {
+            const tolerated = validElements.find(
+                (e) => e.tagName === bodyChild.tagName && bodyChild.getAttribute(e.attr) === e.value
+            );
+            if (!failed && !tolerated) {
+                QUnit.pushFailure(
+                    `Body still contains undesirable elements:\n${bodyChild.outerHTML}`
+                );
+            }
+            if (!tolerated || !tolerated.keep) {
+                toRemove.push(bodyChild);
+            }
+        }
+        // cleanup leftovers in #qunit-fixture
+        const qunitFixture = document.getElementById("qunit-fixture");
+        if (qunitFixture.children.length) {
+            toRemove.push(...qunitFixture.children);
+        }
+        // remove unwanted elements if not in debug
+        for (const el of toRemove) {
+            el.remove();
+        }
+        document.body.classList.remove("modal-open");
+    });
+}
+
+return __exports;
+});
+;
+
+/*************************************************
+*  Filepath: /web/static/tests/helpers/utils.js  *
+*  Lines: 1106                                   *
+*************************************************/
+odoo.define('@web/../tests/helpers/utils', ['@web/core/assets', '@web/core/browser/browser', '@web/core/browser/feature_detection', '@web/core/network/download', '@web/core/utils/concurrency', '@web/core/utils/patch', '@web/core/utils/ui', '@web/core/l10n/translation', '@web/../tests/helpers/cleanup', '@odoo/owl'], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module **/
+
+const { templates } = require("@web/core/assets");
+const { browser } = require("@web/core/browser/browser");
+const { isMacOS } = require("@web/core/browser/feature_detection");
+const { download } = require("@web/core/network/download");
+const { Deferred } = require("@web/core/utils/concurrency");
+const { patch } = require("@web/core/utils/patch");
+const { isVisible } = require("@web/core/utils/ui");
+const { _t } = require("@web/core/l10n/translation");
+const { registerCleanup } = require("@web/../tests/helpers/cleanup");
+
+const {
+    App,
+    onError,
+    onMounted,
+    onPatched,
+    onRendered,
+    onWillDestroy,
+    onWillPatch,
+    onWillRender,
+    onWillStart,
+    onWillUnmount,
+    onWillUpdateProps,
+    useComponent,
+} = require("@odoo/owl");
+
+/**
+ * @typedef {keyof HTMLElementEventMap | keyof WindowEventMap} EventType
+ *
+ * @typedef {Side | `${Side}-${Side}` | { x?: number, y?: number }} Position
+ *
+ * @typedef {"bottom" | "left" | "right" | "top"} Side
+ *
+ * @typedef TriggerEventOptions
+ * @property {boolean} [skipVisibilityCheck=false]
+ * @property {boolean} [sync=false]
+ */
+
+/**
+ * Patch the native Date object
+ *
+ * Note that it will be automatically unpatched at the end of the test
+ *
+ * @param {number} [year]
+ * @param {number} [month]
+ * @param {number} [day]
+ * @param {number} [hours]
+ * @param {number} [minutes]
+ * @param {number} [seconds]
+ * @param {number} [ms=0]
+ */
+__exports.patchDate = patchDate; function patchDate(year, month, day, hours, minutes, seconds, ms = 0) {
+    var RealDate = window.Date;
+    var actualDate = new RealDate();
+
+    // By default, RealDate uses the browser offset, so we must replace it with the offset fixed in luxon.
+    var fakeDate = new RealDate(year, month, day, hours, minutes, seconds, ms);
+    if (!(luxon.Settings.defaultZone instanceof luxon.FixedOffsetZone)) {
+        throw new Error("luxon.Settings.defaultZone must be a FixedOffsetZone");
+    }
+    const browserOffset = -fakeDate.getTimezoneOffset();
+    const patchedOffset = luxon.Settings.defaultZone.offset();
+    const offsetDiff = patchedOffset - browserOffset;
+    const correctedMinutes = fakeDate.getMinutes() - offsetDiff;
+    fakeDate.setMinutes(correctedMinutes);
+
+    var timeInterval = actualDate.getTime() - fakeDate.getTime();
+
+    // eslint-disable-next-line no-global-assign
+    window.Date = (function (NativeDate) {
+        function Date(Y, M, D, h, m, s, ms) {
+            var length = arguments.length;
+            let date;
+            if (arguments.length > 0) {
+                date =
+                    length == 1 && String(Y) === Y // isString(Y)
+                        ? // We explicitly pass it through parse:
+                          new NativeDate(Date.parse(Y))
+                        : // We have to manually make calls depending on argument
+                        // length here
+                        length >= 7
+                        ? new NativeDate(Y, M, D, h, m, s, ms)
+                        : length >= 6
+                        ? new NativeDate(Y, M, D, h, m, s)
+                        : length >= 5
+                        ? new NativeDate(Y, M, D, h, m)
+                        : length >= 4
+                        ? new NativeDate(Y, M, D, h)
+                        : length >= 3
+                        ? new NativeDate(Y, M, D)
+                        : length >= 2
+                        ? new NativeDate(Y, M)
+                        : length >= 1
+                        ? new NativeDate(Y)
+                        : new NativeDate();
+                // Prevent mixups with unfixed Date object
+                date.constructor = Date;
+                return date;
+            } else {
+                date = new NativeDate();
+                var time = date.getTime();
+                time -= timeInterval;
+                date.setTime(time);
+                return date;
+            }
+        }
+
+        // Copy any custom methods a 3rd party library may have added
+        for (var key in NativeDate) {
+            Date[key] = NativeDate[key];
+        }
+
+        // Copy "native" methods explicitly; they may be non-enumerable
+        // exception: 'now' uses fake date as reference
+        Date.now = function () {
+            var date = new NativeDate();
+            var time = date.getTime();
+            time -= timeInterval;
+            return time;
+        };
+        Date.UTC = NativeDate.UTC;
+        Date.prototype = NativeDate.prototype;
+        Date.prototype.constructor = Date;
+
+        // Upgrade Date.parse to handle simplified ISO 8601 strings
+        Date.parse = NativeDate.parse;
+        return Date;
+    })(Date);
+
+    registerCleanup(() => {
+        window.Date = RealDate;
+    });
+}
+
+/**
+ * Applies a fixed time zone to luxon based on an offset to the UTC time zone.
+ *
+ * @param {number} offset the number of minutes ahead or behind the UTC time zone
+ *                          +120 => UTC+2
+ *                          -120 => UTC-2
+ */
+__exports.patchTimeZone = patchTimeZone; function patchTimeZone(offset) {
+    patchWithCleanup(luxon.Settings, { defaultZone: luxon.FixedOffsetZone.instance(offset) });
+}
+
+/**
+ *
+ * @param {Object} obj object to patch
+ * @param {Object} patchValue the actual patch description
+ */
+__exports.patchWithCleanup = patchWithCleanup; function patchWithCleanup(obj, patchValue) {
+    const unpatch = patch(obj, patchValue);
+    registerCleanup(() => {
+        unpatch();
+    });
+}
+
+/**
+ * @returns {Element}
+ */
+__exports.getFixture = getFixture; function getFixture() {
+    if (!window.QUnit) {
+        return document;
+    }
+    if (QUnit.config.debug) {
+        return document.body;
+    } else {
+        return document.getElementById("qunit-fixture");
+    }
+}
+
+__exports.nextTick = nextTick; async function nextTick() {
+    await new Promise((resolve) => window.requestAnimationFrame(resolve));
+    await new Promise((resolve) => setTimeout(resolve));
+}
+
+__exports.makeDeferred = makeDeferred; function makeDeferred() {
+    return new Deferred();
+}
+
+__exports.findElement = findElement; function findElement(el, selector) {
+    let target = el;
+    if (selector) {
+        const els = el.querySelectorAll(selector);
+        if (els.length === 0) {
+            throw new Error(`No element found (selector: ${selector})`);
+        }
+        if (els.length > 1) {
+            throw new Error(`Found ${els.length} elements, instead of 1 (selector: ${selector})`);
+        }
+        target = els[0];
+    }
+    return target;
+}
+
+//-----------------------------------------------------------------------------
+// Event init attributes mappers
+//-----------------------------------------------------------------------------
+
+/** @param {EventInit} [args] */
+const mapBubblingEvent = (args) => ({ ...args, bubbles: true });
+
+/** @param {EventInit} [args] */
+const mapNonBubblingEvent = (args) => ({ ...args, bubbles: false });
+
+/** @param {EventInit} [args={}] */
+const mapBubblingPointerEvent = (args = {}) => ({
+    clientX: args.pageX,
+    clientY: args.pageY,
+    ...args,
+    bubbles: true,
+    cancelable: true,
+    view: window,
+});
+
+/** @param {EventInit} [args] */
+const mapNonBubblingPointerEvent = (args) => ({
+    ...mapBubblingPointerEvent(args),
+    bubbles: false,
+    cancelable: false,
+});
+
+/** @param {EventInit} [args={}] */
+const mapCancelableTouchEvent = (args = {}) => ({
+    ...args,
+    bubbles: true,
+    cancelable: true,
+    composed: true,
+    rotation: 0.0,
+    touches: args.touches ? [...args.touches.map((e) => new Touch(e))] : undefined,
+    view: window,
+    zoom: 1.0,
+});
+
+/** @param {EventInit} [args] */
+const mapNonCancelableTouchEvent = (args) => ({
+    ...mapCancelableTouchEvent(args),
+    cancelable: false,
+});
+
+/** @param {EventInit} [args] */
+const mapKeyboardEvent = (args) => ({
+    ...args,
+    bubbles: true,
+    cancelable: true,
+});
+
+/**
+ * @template {typeof Event} T
+ * @param {EventType} eventType
+ * @returns {[T, (attrs: EventInit) => EventInit]}
+ */
+const getEventConstructor = (eventType) => {
+    switch (eventType) {
+        // Mouse events
+        case "auxclick":
+        case "click":
+        case "contextmenu":
+        case "dblclick":
+        case "mousedown":
+        case "mouseup":
+        case "mousemove":
+        case "mouseover":
+        case "mouseout": {
+            return [MouseEvent, mapBubblingPointerEvent];
+        }
+        case "mouseenter":
+        case "mouseleave": {
+            return [MouseEvent, mapNonBubblingPointerEvent];
+        }
+        // Pointer events
+        case "pointerdown":
+        case "pointerup":
+        case "pointermove":
+        case "pointerover":
+        case "pointerout": {
+            return [PointerEvent, mapBubblingPointerEvent];
+        }
+        case "pointerenter":
+        case "pointerleave": {
+            return [PointerEvent, mapNonBubblingPointerEvent];
+        }
+        // Focus events
+        case "focusin": {
+            return [FocusEvent, mapBubblingEvent];
+        }
+        case "focus":
+        case "blur": {
+            return [FocusEvent, mapNonBubblingEvent];
+        }
+        // Clipboard events
+        case "cut":
+        case "copy":
+        case "paste": {
+            return [ClipboardEvent, mapBubblingEvent];
+        }
+        // Keyboard events
+        case "keydown":
+        case "keypress":
+        case "keyup": {
+            return [KeyboardEvent, mapKeyboardEvent];
+        }
+        // Drag events
+        case "drag":
+        case "dragend":
+        case "dragenter":
+        case "dragstart":
+        case "dragleave":
+        case "dragover":
+        case "drop": {
+            return [DragEvent, mapBubblingEvent];
+        }
+        // Input events
+        case "input": {
+            return [InputEvent, mapBubblingEvent];
+        }
+        // Composition events
+        case "compositionstart":
+        case "compositionend": {
+            return [CompositionEvent, mapBubblingEvent];
+        }
+        // UI events
+        case "scroll": {
+            return [UIEvent, mapNonBubblingEvent];
+        }
+        // Touch events
+        case "touchstart":
+        case "touchend":
+        case "touchmove": {
+            return [TouchEvent, mapCancelableTouchEvent];
+        }
+        case "touchcancel": {
+            return [TouchEvent, mapNonCancelableTouchEvent];
+        }
+        // Default: base Event constructor
+        default: {
+            return [Event, mapBubblingEvent];
+        }
+    }
+};
+
+/**
+ * @template {EventType} T
+ * @param {Element} el
+ * @param {string | null | undefined | false} selector
+ * @param {T} eventType
+ * @param {EventInit} [eventInit]
+ * @param {TriggerEventOptions} [options={}]
+ * @returns {GlobalEventHandlersEventMap[T] | Promise<GlobalEventHandlersEventMap[T]>}
+ */
+__exports.triggerEvent = triggerEvent; function triggerEvent(el, selector, eventType, eventInit, options = {}) {
+    const errors = [];
+    const target = findElement(el, selector);
+
+    // Error handling
+    if (typeof eventType !== "string") {
+        errors.push("event type must be a string");
+    }
+    if (!target) {
+        errors.push("cannot find target");
+    } else if (!options.skipVisibilityCheck && !isVisible(target)) {
+        errors.push("target is not visible");
+    }
+    if (errors.length) {
+        throw new Error(
+            `Cannot trigger event${eventType ? ` "${eventType}"` : ""}${
+                selector ? ` (with selector "${selector}")` : ""
+            }: ${errors.join(" and ")}`
+        );
+    }
+
+    // Actual dispatch
+    const [Constructor, processParams] = getEventConstructor(eventType);
+    const event = new Constructor(eventType, processParams(eventInit));
+    target.dispatchEvent(event);
+
+    if (window.QUnit && QUnit.config.debug) {
+        const group = `%c[${event.type.toUpperCase()}]`;
+        console.groupCollapsed(group, "color: #b52c9b");
+        console.log(target, event);
+        console.groupEnd(group, "color: #b52c9b");
+    }
+
+    if (options.sync) {
+        return event;
+    } else {
+        return nextTick().then(() => event);
+    }
+}
+
+/**
+ * @param {Element} el
+ * @param {string | null | undefined | false} selector
+ * @param {(EventType | [EventType, EventInit])[]} [eventDefs]
+ * @param {TriggerEventOptions} [options={}]
+ */
+__exports.triggerEvents = triggerEvents; function triggerEvents(el, selector, eventDefs, options = {}) {
+    const events = [...eventDefs].map((eventDef) => {
+        const [eventType, eventInit] = Array.isArray(eventDef) ? eventDef : [eventDef, {}];
+        return triggerEvent(el, selector, eventType, eventInit, options);
+    });
+    if (options.sync) {
+        return events;
+    } else {
+        return nextTick().then(() => events);
+    }
+}
+
+/**
+ * Triggers a scroll event on the given target
+ *
+ * If the target cannot be scrolled or an axis has reached
+ * the end of the scrollable area, the event can be transmitted
+ * to its nearest parent until it can be triggered
+ *
+ * @param {Element} target target of the scroll event
+ * @param {Object} coordinates
+ * @param {number} coordinates.left coordinates to scroll horizontally
+ * @param {number} coordinates.top coordinates to scroll vertically
+ * @param {boolean} canPropagate states if the scroll can propagate to a scrollable parent
+ */
+__exports.triggerScroll = triggerScroll; async function triggerScroll(
+    target,
+    coordinates = { left: null, top: null },
+    canPropagate = true
+) {
+    const isScrollable =
+        (target.scrollHeight > target.clientHeight && target.clientHeight > 0) ||
+        (target.scrollWidth > target.clientWidth && target.clientWidth > 0);
+    if (!isScrollable && !canPropagate) {
+        return;
+    }
+    if (isScrollable) {
+        const canScrollFrom = {
+            left:
+                coordinates.left > target.scrollLeft
+                    ? target.scrollLeft + target.clientWidth < target.scrollWidth
+                    : target.scrollLeft > 0,
+            top:
+                coordinates.top > target.scrollTop
+                    ? target.scrollTop + target.clientHeight < target.scrollHeight
+                    : target.scrollTop > 0,
+        };
+        const scrollCoordinates = {};
+        Object.entries(coordinates).forEach(([key, value]) => {
+            if (value !== null && canScrollFrom[key]) {
+                scrollCoordinates[key] = value;
+                delete coordinates[key];
+            }
+        });
+        target.scrollTo(scrollCoordinates);
+        await triggerEvent(target, null, "scroll");
+        if (!canPropagate || !Object.entries(coordinates).length) {
+            return;
+        }
+    }
+    target.parentElement
+        ? triggerScroll(target.parentElement, coordinates)
+        : triggerEvent(window, null, "scroll");
+    await nextTick();
+}
+
+__exports.click = click; function click(
+    el,
+    selector,
+    { mouseEventInit = {}, skipDisabledCheck = false, skipVisibilityCheck = false } = {}
+) {
+    if (!skipDisabledCheck && el.disabled) {
+        throw new Error("Can't click on a disabled button");
+    }
+    return triggerEvents(
+        el,
+        selector,
+        ["pointerdown", "mousedown", "focus", "pointerup", "mouseup", ["click", mouseEventInit]],
+        { skipVisibilityCheck }
+    );
+}
+
+__exports.clickCreate = clickCreate; function clickCreate(htmlElement) {
+    if (
+        htmlElement.querySelectorAll(
+            ".o_control_panel_main_buttons .d-none.d-xl-inline-flex .o_form_button_create"
+        ).length
+    ) {
+        return click(
+            htmlElement,
+            ".o_control_panel_main_buttons .d-none.d-xl-inline-flex .o_form_button_create"
+        );
+    } else if (
+        htmlElement.querySelectorAll(
+            ".o_control_panel_main_buttons .d-none.d-xl-inline-flex .o_list_button_create"
+        ).length
+    ) {
+        return click(
+            htmlElement,
+            ".o_control_panel_main_buttons .d-none.d-xl-inline-flex .o_list_button_create"
+        );
+    } else {
+        throw new Error("No edit button found to be clicked.");
+    }
+}
+
+__exports.clickEdit = clickEdit; function clickEdit(htmlElement) {
+    if (htmlElement.querySelectorAll(".o_list_button_edit").length) {
+        return click(htmlElement, ".o_list_button_edit");
+    } else {
+        throw new Error("No edit button found to be clicked.");
+    }
+}
+
+__exports.clickSave = clickSave; async function clickSave(htmlElement) {
+    if (htmlElement.querySelectorAll(".o_form_status_indicator").length) {
+        await mouseEnter(htmlElement, ".o_form_status_indicator");
+    }
+    if (htmlElement.querySelectorAll(".o_form_button_save").length) {
+        return click(htmlElement, ".o_form_button_save");
+    }
+    const listSaveButtons = htmlElement.querySelectorAll(".o_list_button_save");
+    if (listSaveButtons.length) {
+        return listSaveButtons.length >= 2 ? click(listSaveButtons[1]) : click(listSaveButtons[0]);
+    } else {
+        throw new Error("No save button found to be clicked.");
+    }
+}
+
+__exports.clickDiscard = clickDiscard; async function clickDiscard(htmlElement) {
+    if (htmlElement.querySelectorAll(".o_form_status_indicator").length) {
+        await mouseEnter(htmlElement, ".o_form_status_indicator");
+    }
+    if (htmlElement.querySelectorAll(".o_form_button_cancel").length) {
+        return click(htmlElement, ".o_form_button_cancel");
+    } else if ($(htmlElement).find(".o_list_button_discard:visible").length) {
+        return click($(htmlElement).find(".o_list_button_discard:visible").get(0));
+    } else {
+        throw new Error("No discard button found to be clicked.");
+    }
+}
+
+/**
+ * Trigger pointerenter and mouseenter events on the given target. If no
+ * coordinates are given, the event is located by default
+ * in the middle of the target to simplify the test process
+ *
+ * @param {Element} el
+ * @param {string} selector
+ * @param {Object} coordinates position of the mouseenter event
+ */
+__exports.mouseEnter = mouseEnter; async function mouseEnter(el, selector, coordinates) {
+    const target = el.querySelector(selector) || el;
+    const atPos = coordinates || {
+        clientX: target.getBoundingClientRect().left + target.getBoundingClientRect().width / 2,
+        clientY: target.getBoundingClientRect().top + target.getBoundingClientRect().height / 2,
+    };
+    return triggerEvents(target, null, ["pointerenter", "mouseenter"], atPos);
+}
+
+/**
+ * Trigger pointerleave and mouseleave events on the given target.
+ *
+ * @param {Element} el
+ * @param {string} selector
+ */
+__exports.mouseLeave = mouseLeave; async function mouseLeave(el, selector) {
+    const target = el.querySelector(selector) || el;
+    return triggerEvents(target, null, ["pointerleave", "mouseleave"]);
+}
+
+__exports.editInput = editInput; async function editInput(el, selector, value) {
+    const input = findElement(el, selector);
+    if (!(input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement)) {
+        throw new Error("Only 'input' and 'textarea' elements can be edited with 'editInput'.");
+    }
+    if (
+        !["text", "textarea", "email", "search", "color", "number", "file", "tel"].includes(
+            input.type
+        )
+    ) {
+        throw new Error(`Type "${input.type}" not supported by 'editInput'.`);
+    }
+
+    const eventOpts = {};
+    if (input.type === "file") {
+        const files = Array.isArray(value) ? value : [value];
+        const dataTransfer = new DataTransfer();
+        for (const file of files) {
+            if (!(file instanceof File)) {
+                throw new Error(`File input value should be one or several File objects.`);
+            }
+            dataTransfer.items.add(file);
+        }
+        input.files = dataTransfer.files;
+        eventOpts.skipVisibilityCheck = true;
+    } else {
+        input.value = value;
+    }
+
+    await triggerEvents(input, null, ["input", "change"], eventOpts);
+
+    if (input.type === "file") {
+        // Need to wait for the file to be loaded by the input
+        await nextTick();
+        await nextTick();
+    }
+}
+
+__exports.editSelect = editSelect; function editSelect(el, selector, value) {
+    const select = findElement(el, selector);
+    if (select.tagName !== "SELECT") {
+        throw new Error("Only select tag can be edited with selectInput.");
+    }
+    select.value = value;
+    return triggerEvent(select, null, "change");
+}
+
+__exports.editSelectMenu = editSelectMenu; async function editSelectMenu(el, selector, value) {
+    const dropdown = el.querySelector(selector);
+    await click(dropdown.querySelector(".dropdown-toggle"));
+    for (const item of Array.from(dropdown.querySelectorAll(".dropdown-item"))) {
+        if (item.textContent === value) {
+            return click(item);
+        }
+    }
+}
+
+/**
+ * Triggers an hotkey properly disregarding the operating system.
+ *
+ * @param {string} hotkey
+ * @param {boolean} addOverlayModParts
+ * @param {KeyboardEventInit} eventAttrs
+ */
+__exports.triggerHotkey = triggerHotkey; async function triggerHotkey(hotkey, addOverlayModParts = false, eventAttrs = {}) {
+    eventAttrs.key = hotkey.split("+").pop();
+
+    if (/shift/i.test(hotkey)) {
+        eventAttrs.shiftKey = true;
+    }
+
+    if (/control/i.test(hotkey)) {
+        if (isMacOS()) {
+            eventAttrs.metaKey = true;
+        } else {
+            eventAttrs.ctrlKey = true;
+        }
+    }
+
+    if (/alt/i.test(hotkey) || addOverlayModParts) {
+        if (isMacOS()) {
+            eventAttrs.ctrlKey = true;
+        } else {
+            eventAttrs.altKey = true;
+        }
+    }
+
+    if (!("bubbles" in eventAttrs)) {
+        eventAttrs.bubbles = true;
+    }
+
+    const [keydownEvent, keyupEvent] = await triggerEvents(
+        document.activeElement,
+        null,
+        [
+            ["keydown", eventAttrs],
+            ["keyup", eventAttrs],
+        ],
+        { skipVisibilityCheck: true }
+    );
+
+    return { keydownEvent, keyupEvent };
+}
+
+__exports.mockDownload = mockDownload; function mockDownload(cb) {
+    patchWithCleanup(download, { _download: cb });
+}
+
+const hushConsole = __exports.hushConsole = Object.create(null);
+for (const propName of Object.keys(window.console)) {
+    hushConsole[propName] = () => {};
+}
+
+__exports.mockSendBeacon = mockSendBeacon; function mockSendBeacon(mock) {
+    patchWithCleanup(navigator, {
+        sendBeacon: (url, blob) => {
+            return mock(url, blob) !== false;
+        },
+    });
+}
+
+__exports.mockTimeout = mockTimeout; function mockTimeout() {
+    const timeouts = new Map();
+    let currentTime = 0;
+    let id = 1;
+    patchWithCleanup(browser, {
+        setTimeout(fn, delay = 0) {
+            timeouts.set(id, { fn, scheduledFor: delay + currentTime, id });
+            return id++;
+        },
+        clearTimeout(id) {
+            timeouts.delete(id);
+        },
+    });
+    return {
+        execRegisteredTimeouts() {
+            for (const { fn } of timeouts.values()) {
+                fn();
+            }
+            timeouts.clear();
+        },
+        async advanceTime(duration) {
+            // wait here so all microtasktick scheduled in this frame can be
+            // executed and possibly register their own timeout
+            await nextTick();
+            currentTime += duration;
+            for (const { fn, scheduledFor, id } of timeouts.values()) {
+                if (scheduledFor <= currentTime) {
+                    fn();
+                    timeouts.delete(id);
+                }
+            }
+            // wait here to make sure owl can update the UI
+            await nextTick();
+        },
+    };
+}
+
+__exports.mockAnimationFrame = mockAnimationFrame; function mockAnimationFrame() {
+    const callbacks = new Map();
+    let currentTime = 0;
+    let id = 1;
+    patchWithCleanup(browser, {
+        requestAnimationFrame(fn) {
+            callbacks.set(id, { fn, scheduledFor: 16 + currentTime, id });
+            return id++;
+        },
+        cancelAnimationFrame(id) {
+            callbacks.delete(id);
+        },
+        performance: { now: () => currentTime },
+    });
+    return {
+        execRegisteredAnimationFrames() {
+            for (const { fn } of callbacks.values()) {
+                fn(currentTime);
+            }
+            callbacks.clear();
+        },
+        async advanceFrame(count = 1) {
+            // wait here so all microtasktick scheduled in this frame can be
+            // executed and possibly register their own timeout
+            await nextTick();
+            currentTime += 16 * count;
+            for (const { fn, scheduledFor, id } of callbacks.values()) {
+                if (scheduledFor <= currentTime) {
+                    fn(currentTime);
+                    callbacks.delete(id);
+                }
+            }
+            // wait here to make sure owl can update the UI
+            await nextTick();
+        },
+    };
+}
+
+__exports.mount = mount; async function mount(Comp, target, config = {}) {
+    let { props, env } = config;
+    env = env || {};
+    const configuration = {
+        env,
+        templates,
+        test: true,
+        props,
+    };
+    if (env.services && "localization" in env.services) {
+        configuration.translateFn = _t;
+    }
+    const app = new App(Comp, configuration);
+    registerCleanup(() => app.destroy());
+    return app.mount(target);
+}
+
+__exports.destroy = destroy; function destroy(comp) {
+    comp.__owl__.app.destroy();
+}
+
+__exports.findChildren = findChildren; function findChildren(comp, predicate = (e) => e) {
+    const queue = [];
+    [].unshift.apply(queue, Object.values(comp.__owl__.children));
+
+    while (queue.length > 0) {
+        const curNode = queue.pop();
+        if (predicate(curNode)) {
+            return curNode;
+        }
+        [].unshift.apply(queue, Object.values(curNode.component.__owl__.children));
+    }
+}
+
+// partial replacement of t-ref on component
+__exports.useChild = useChild; function useChild() {
+    const node = useComponent().__owl__;
+    const setChild = () => {
+        const componentNode = Object.values(node.children)[0];
+        node.component.child = componentNode.component;
+    };
+    onMounted(setChild);
+    onPatched(setChild);
+}
+
+__exports.useLogLifeCycle = useLogLifeCycle; function useLogLifeCycle(logFn, name = "") {
+    const component = useComponent();
+    let loggedName = `${component.constructor.name}`;
+    if (name) {
+        loggedName = `${component.constructor.name} ${name}`;
+    }
+    onError(() => {
+        logFn(`onError ${loggedName}`);
+    });
+    onMounted(() => {
+        logFn(`onMounted ${loggedName}`);
+    });
+    onPatched(() => {
+        logFn(`onPatched ${loggedName}`);
+    });
+    onRendered(() => {
+        logFn(`onRendered ${loggedName}`);
+    });
+    onWillDestroy(() => {
+        logFn(`onWillDestroy ${loggedName}`);
+    });
+    onWillPatch(() => {
+        logFn(`onWillPatch ${loggedName}`);
+    });
+    onWillRender(() => {
+        logFn(`onWillRender ${loggedName}`);
+    });
+    onWillStart(() => {
+        logFn(`onWillStart ${loggedName}`);
+    });
+    onWillUnmount(() => {
+        logFn(`onWillUnmount ${loggedName}`);
+    });
+    onWillUpdateProps(() => {
+        logFn(`onWillUpdateProps ${loggedName}`);
+    });
+}
+
+/**
+ * Returns the list of nodes containing n2 (included) that do not contain n1.
+ *
+ * @param {Node} n1
+ * @param {Node} n2
+ * @returns {Node[]}
+ */
+function getDifferentParents(n1, n2) {
+    const parents = [n2];
+    while (parents[0].parentNode) {
+        const parent = parents[0].parentNode;
+        if (parent.contains(n1)) {
+            break;
+        }
+        parents.unshift(parent);
+    }
+    return parents;
+}
+
+/**
+ * Helper performing a drag and drop sequence.
+ *
+ * - 'from' is used to determine the element on which the drag will start;
+ * - 'target' will determine the element on which the first one will be dropped.
+ *
+ * The first element will be dragged by its center, and will be dropped on the
+ * bottom-right inner pixel of the target element. This behavior covers both
+ * cases of appending the first element to the end of a list (toSelector =
+ * target list) or moving it at the position of another element, effectively
+ * placing the first element before the second (toSelector = other element).
+ *
+ * A position can be given to drop the first element above, below, or on the
+ * side of the second (default is inside, as specified above).
+ *
+ * Note that only the last event is awaited, since all the others are
+ * considered to be synchronous.
+ *
+ * @param {Element | string} from
+ * @param {Element | string} to
+ * @param {Position} [position]
+ */
+__exports.dragAndDrop = dragAndDrop; async function dragAndDrop(from, to, position) {
+    const { drop } = await drag(from);
+    await drop(to, position);
+}
+
+/**
+ * Helper performing a drag.
+ *
+ * - the 'from' selector is used to determine the element on which the drag will
+ *  start;
+ * - the 'target' selector will determine the element on which the dragged element will be
+ * moved.
+ *
+ * Returns a drop function
+ *
+ * @param {Element | string} from
+ */
+__exports.drag = drag; async function drag(from, pointerType = "mouse") {
+    const assertIsDragging = (fn, endDrag) => {
+        return {
+            async [fn.name](...args) {
+                if (dragEndReason) {
+                    throw new Error(
+                        `Cannot execute drag helper '${fn.name}': drag sequence has been ended by '${dragEndReason}'.`
+                    );
+                }
+                await fn(...args);
+                if (endDrag) {
+                    dragEndReason = fn.name;
+                }
+            },
+        }[fn.name];
+    };
+
+    const cancel = assertIsDragging(async function cancel() {
+        await triggerEvent(window, null, "keydown", { key: "Escape" });
+    }, true);
+
+    /**
+     * @param {Element | string} [to]
+     * @param {Position} [position]
+     */
+    const drop = assertIsDragging(async function drop(to, position) {
+        if (to) {
+            await moveTo(to, position);
+        }
+        await triggerEvent(target || source, null, "pointerup", targetPosition);
+    }, true);
+
+    /**
+     * @param {Element | string} selector
+     */
+    const getEl = (selector) =>
+        selector instanceof Element ? selector : fixture.querySelector(selector);
+
+    /**
+     * @param {Position} [position]
+     */
+    const getTargetPosition = (position) => {
+        const tRect = target.getBoundingClientRect();
+        const tPos = {
+            clientX: Math.floor(tRect.x),
+            clientY: Math.floor(tRect.y),
+        };
+        if (position && typeof position === "object") {
+            // x and y coordinates start from the element's initial coordinates
+            tPos.clientX += position.x || 0;
+            tPos.clientY += position.y || 0;
+        } else {
+            const positions = typeof position === "string" ? position.split("-") : [];
+
+            // X position
+            if (positions.includes("left")) {
+                tPos.clientX -= 1;
+            } else if (positions.includes("right")) {
+                tPos.clientX += Math.ceil(tRect.width) + 1;
+            } else {
+                tPos.clientX += Math.floor(tRect.width / 2);
+            }
+
+            // Y position
+            if (positions.includes("top")) {
+                tPos.clientY -= 1;
+            } else if (positions.includes("bottom")) {
+                tPos.clientY += Math.ceil(tRect.height) + 1;
+            } else {
+                tPos.clientY += Math.floor(tRect.height / 2);
+            }
+        }
+        return tPos;
+    };
+
+    /**
+     * @param {Element | string} [to]
+     * @param {Position} [position]
+     */
+    const moveTo = assertIsDragging(async function moveTo(to, position) {
+        target = getEl(to);
+        if (!target) {
+            return;
+        }
+
+        // Recompute target position
+        targetPosition = getTargetPosition(position);
+
+        // Move, enter and drop the element on the target
+        await triggerEvent(source, null, "pointermove", targetPosition);
+
+        // "pointerenter" is fired on every parent of `target` that do not contain
+        // `from` (typically: different parent lists).
+        for (const parent of getDifferentParents(source, target)) {
+            triggerEvent(parent, null, "pointerenter", targetPosition);
+        }
+        await nextTick();
+
+        return dragHelpers;
+    }, false);
+
+    const dragHelpers = { cancel, drop, moveTo };
+    const fixture = getFixture();
+
+    const source = getEl(from instanceof Element ? from : fixture.querySelector(from));
+    const sourceRect = source.getBoundingClientRect();
+
+    let dragEndReason = null;
+    let target;
+    let targetPosition;
+
+    // Pointer down on main target
+    await triggerEvent(source, null, "pointerdown", {
+        pointerType,
+        clientX: sourceRect.x + sourceRect.width / 2,
+        clientY: sourceRect.y + sourceRect.height / 2,
+    });
+
+    return dragHelpers;
+}
+
+__exports.clickDropdown = clickDropdown; async function clickDropdown(target, fieldName) {
+    const dropdownInput = target.querySelector(`[name='${fieldName}'] .dropdown input`);
+    dropdownInput.focus();
+    await nextTick();
+    await click(dropdownInput);
+}
+
+__exports.clickOpenedDropdownItem = clickOpenedDropdownItem; async function clickOpenedDropdownItem(target, fieldName, itemContent) {
+    const dropdowns = target.querySelectorAll(`[name='${fieldName}'] .dropdown .dropdown-menu`);
+    if (dropdowns.length === 0) {
+        throw new Error(`No dropdown found for field ${fieldName}`);
+    } else if (dropdowns.length > 1) {
+        throw new Error(`Found ${dropdowns.length} dropdowns for field ${fieldName}`);
+    }
+    const dropdownItems = dropdowns[0].querySelectorAll("li");
+    const indexToClick = Array.from(dropdownItems)
+        .map((html) => html.textContent)
+        .indexOf(itemContent);
+    if (indexToClick === -1) {
+        throw new Error(`The element '${itemContent}' does not exist in the dropdown`);
+    }
+    await click(dropdownItems[indexToClick]);
+}
+
+__exports.selectDropdownItem = selectDropdownItem; async function selectDropdownItem(target, fieldName, itemContent) {
+    await clickDropdown(target, fieldName);
+    await clickOpenedDropdownItem(target, fieldName, itemContent);
+}
+
+__exports.getNodesTextContent = getNodesTextContent; function getNodesTextContent(nodes) {
+    return Array.from(nodes).map((n) => n.textContent);
+}
+
+/**
+ * Click to open the dropdown on a many2one
+ */
+__exports.clickOpenM2ODropdown = clickOpenM2ODropdown; async function clickOpenM2ODropdown(el, fieldName, selector) {
+    const m2oSelector = `${selector || ""} .o_field_many2one[name=${fieldName}] input`;
+    const matches = el.querySelectorAll(m2oSelector);
+    if (matches.length !== 1) {
+        throw new Error(
+            `cannot open m2o: selector ${selector} has been found ${matches.length} instead of 1`
+        );
+    }
+
+    await click(matches[0]);
+    return matches[0];
+}
+
+/**
+ * Click on the active (highlighted) selection in a m2o dropdown.
+ */
+// TO FIX
+__exports.clickM2OHighlightedItem = clickM2OHighlightedItem; async function clickM2OHighlightedItem(el, fieldName, selector) {
+    const m2oSelector = `${selector || ""} .o_field_many2one[name=${fieldName}] input`;
+    // const $dropdown = $(m2oSelector).autocomplete('widget');
+    const matches = el.querySelectorAll(m2oSelector);
+    if (matches.length !== 1) {
+        throw new Error(
+            `cannot open m2o: selector ${selector} has been found ${matches.length} instead of 1`
+        );
+    }
+    // clicking on an li (no matter which one), will select the focussed one
+    return click(matches[0].parentElement.querySelector("li"));
+}
+
+// X2Many
+__exports.addRow = addRow; async function addRow(target, selector) {
+    await click(target.querySelector(`${selector ? selector : ""} .o_field_x2many_list_row_add a`));
+}
+
+__exports.removeRow = removeRow; async function removeRow(target, index) {
+    await click(target.querySelectorAll(".o_list_record_remove")[index]);
+}
+
+return __exports;
+});
+;
+
+/*****************************************
+*  Filepath: /web/static/tests/utils.js  *
+*  Lines: 724                            *
+*****************************************/
+odoo.define('@web/../tests/utils', ['@web/core/utils/ui', '@web/../tests/helpers/cleanup', '@web/../tests/helpers/utils'], function (require) {
+'use strict';
+let __exports = {};
+/* @odoo-module */
+
+const { isVisible } = require("@web/core/utils/ui");
+const { registerCleanup } = require("@web/../tests/helpers/cleanup");
+const {
+    click: webClick,
+    getFixture,
+    makeDeferred,
+    triggerEvents: webTriggerEvents,
+} = require("@web/../tests/helpers/utils");
+
+/**
+ * Create a file object, which can be used for drag-and-drop.
+ *
+ * @param {Object} data
+ * @param {string} data.name
+ * @param {string} data.content
+ * @param {string} data.contentType
+ * @returns {Promise<Object>} resolved with file created
+ */
+__exports.createFile = createFile; function createFile(data) {
+    // Note: this is only supported by Chrome, and does not work in Incognito mode
+    return new Promise(function (resolve, reject) {
+        var requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
+        if (!requestFileSystem) {
+            throw new Error("FileSystem API is not supported");
+        }
+        requestFileSystem(window.TEMPORARY, 1024 * 1024, function (fileSystem) {
+            fileSystem.root.getFile(data.name, { create: true }, function (fileEntry) {
+                fileEntry.createWriter(function (fileWriter) {
+                    fileWriter.onwriteend = function (e) {
+                        fileSystem.root.getFile(data.name, {}, function (fileEntry) {
+                            fileEntry.file(function (file) {
+                                resolve(file);
+                            });
+                        });
+                    };
+                    fileWriter.write(new Blob([data.content], { type: data.contentType }));
+                });
+            });
+        });
+    });
+}
+
+/**
+ * Create a fake object 'dataTransfer', linked to some files,
+ * which is passed to drag and drop events.
+ *
+ * @param {Object[]} files
+ * @returns {Object}
+ */
+function createFakeDataTransfer(files) {
+    return {
+        dropEffect: "all",
+        effectAllowed: "all",
+        files,
+        items: [],
+        types: ["Files"],
+    };
+}
+
+/**
+ * Waits until exactly one element matching the given `selector` is present in
+ * `options.target` and then clicks on it.
+ *
+ * @param {string} selector
+ * @param {ContainsOptions} [options] forwarded to `contains`
+ * @param {boolean} [options.shiftKey]
+ */
+__exports.click = click; async function click(selector, options = {}) {
+    const { shiftKey } = options;
+    delete options.shiftKey;
+    await contains(selector, { click: { shiftKey }, ...options });
+}
+
+/**
+ * Waits until exactly one element matching the given `selector` is present in
+ * `options.target` and then dragenters `files` on it.
+ *
+ * @param {string} selector
+ * @param {Object[]} files
+ * @param {ContainsOptions} [options] forwarded to `contains`
+ */
+__exports.dragenterFiles = dragenterFiles; async function dragenterFiles(selector, files, options) {
+    await contains(selector, { dragenterFiles: files, ...options });
+}
+
+/**
+ * Waits until exactly one element matching the given `selector` is present in
+ * `options.target` and then dragovers `files` on it.
+ *
+ * @param {string} selector
+ * @param {Object[]} files
+ * @param {ContainsOptions} [options] forwarded to `contains`
+ */
+__exports.dragoverFiles = dragoverFiles; async function dragoverFiles(selector, files, options) {
+    await contains(selector, { dragoverFiles: files, ...options });
+}
+
+/**
+ * Waits until exactly one element matching the given `selector` is present in
+ * `options.target` and then drops `files` on it.
+ *
+ * @param {string} selector
+ * @param {Object[]} files
+ * @param {ContainsOptions} [options] forwarded to `contains`
+ */
+__exports.dropFiles = dropFiles; async function dropFiles(selector, files, options) {
+    await contains(selector, { dropFiles: files, ...options });
+}
+
+/**
+ * Waits until exactly one element matching the given `selector` is present in
+ * `options.target` and then inputs `files` on it.
+ *
+ * @param {string} selector
+ * @param {Object[]} files
+ * @param {ContainsOptions} [options] forwarded to `contains`
+ */
+__exports.inputFiles = inputFiles; async function inputFiles(selector, files, options) {
+    await contains(selector, { inputFiles: files, ...options });
+}
+
+/**
+ * Waits until exactly one element matching the given `selector` is present in
+ * `options.target` and then pastes `files` on it.
+ *
+ * @param {string} selector
+ * @param {Object[]} files
+ * @param {ContainsOptions} [options] forwarded to `contains`
+ */
+__exports.pasteFiles = pasteFiles; async function pasteFiles(selector, files, options) {
+    await contains(selector, { pasteFiles: files, ...options });
+}
+
+/**
+ * Waits until exactly one element matching the given `selector` is present in
+ * `options.target` and then focuses on it.
+ *
+ * @param {string} selector
+ * @param {ContainsOptions} [options] forwarded to `contains`
+ */
+__exports.focus = focus; async function focus(selector, options) {
+    await contains(selector, { setFocus: true, ...options });
+}
+
+/**
+ * Waits until exactly one element matching the given `selector` is present in
+ * `options.target` and then inserts the given `content`.
+ *
+ * @param {string} selector
+ * @param {string} content
+ * @param {ContainsOptions} [options] forwarded to `contains`
+ * @param {boolean} [options.replace=false]
+ */
+__exports.insertText = insertText; async function insertText(selector, content, options = {}) {
+    const { replace = false } = options;
+    delete options.replace;
+    await contains(selector, { ...options, insertText: { content, replace } });
+}
+
+/**
+ * Waits until exactly one element matching the given `selector` is present in
+ * `options.target` and then sets its `scrollTop` to the given value.
+ *
+ * @param {string} selector
+ * @param {number|"bottom"} scrollTop
+ * @param {ContainsOptions} [options] forwarded to `contains`
+ */
+__exports.scroll = scroll; async function scroll(selector, scrollTop, options) {
+    await contains(selector, { setScroll: scrollTop, ...options });
+}
+
+/**
+ * Waits until exactly one element matching the given `selector` is present in
+ * `options.target` and then triggers `event` on it.
+ *
+ * @param {string} selector
+ * @param {(import("@web/../tests/helpers/utils").EventType|[import("@web/../tests/helpers/utils").EventType, EventInit])[]} events
+ * @param {ContainsOptions} [options] forwarded to `contains`
+ */
+__exports.triggerEvents = triggerEvents; async function triggerEvents(selector, events, options) {
+    await contains(selector, { triggerEvents: events, ...options });
+}
+
+function log(ok, message) {
+    if (window.QUnit) {
+        QUnit.assert.ok(ok, message);
+    } else {
+        if (ok) {
+            console.log(message);
+        } else {
+            console.error(message);
+        }
+    }
+}
+
+let hasUsedContainsPositively = false;
+if (window.QUnit) {
+    QUnit.testStart(() => (hasUsedContainsPositively = false));
+}
+/**
+ * @typedef {[string, ContainsOptions]} ContainsTuple tuple representing params of the contains
+ *  function, where the first element is the selector, and the second element is the options param.
+ * @typedef {Object} ContainsOptions
+ * @property {ContainsTuple} [after] if provided, the found element(s) must be after the element
+ *  matched by this param.
+ * @property {ContainsTuple} [before] if provided, the found element(s) must be before the element
+ *  matched by this param.
+ * @property {Object} [click] if provided, clicks on the first found element
+ * @property {ContainsTuple|ContainsTuple[]} [contains] if provided, the found element(s) must
+ *  contain the provided sub-elements.
+ * @property {number} [count=1] numbers of elements to be found to declare the contains check
+ *  as successful. Elements are counted after applying all other filters.
+ * @property {Object[]} [dragenterFiles] if provided, dragenters the given files on the found element
+ * @property {Object[]} [dragoverFiles] if provided, dragovers the given files on the found element
+ * @property {Object[]} [dropFiles] if provided, drops the given files on the found element
+ * @property {Object[]} [inputFiles] if provided, inputs the given files on the found element
+ * @property {{content:string, replace:boolean}} [insertText] if provided, adds to (or replace) the
+ *  value of the first found element by the given content.
+ * @property {ContainsTuple} [parent] if provided, the found element(s) must have as
+ *  parent the node matching the parent parameter.
+ * @property {Object[]} [pasteFiles] if provided, pastes the given files on the found element
+ * @property {number|"bottom"} [scroll] if provided, the scrollTop of the found element(s)
+ *  must match.
+ *  Note: when using one of the scrollTop options, it is advised to ensure the height is not going
+ *  to change soon, by checking with a preceding contains that all the expected elements are in DOM.
+ * @property {boolean} [setFocus] if provided, focuses the first found element.
+ * @property {boolean} [shadowRoot] if provided, targets the shadowRoot of the found elements.
+ * @property {number|"bottom"} [setScroll] if provided, sets the scrollTop on the first found
+ *  element.
+ * @property {HTMLElement} [target=getFixture()]
+ * @property {string[]} [triggerEvents] if provided, triggers the given events on the found element
+ * @property {string} [text] if provided, the textContent of the found element(s) or one of their
+ *  descendants must match. Use `textContent` option for a match on the found element(s) only.
+ * @property {string} [textContent] if provided, the textContent of the found element(s) must match.
+ *  Prefer `text` option for a match on the found element(s) or any of their descendants, usually
+ *  allowing for a simpler and less specific selector.
+ * @property {string} [value] if provided, the input value of the found element(s) must match.
+ *  Note: value changes are not observed directly, another mutation must happen to catch them.
+ * @property {boolean} [visible] if provided, the found element(s) must be (in)visible
+ */
+class Contains {
+    /**
+     * @param {string} selector
+     * @param {ContainsOptions} [options={}]
+     */
+    constructor(selector, options = {}) {
+        this.selector = selector;
+        this.options = options;
+        this.options.count ??= 1;
+        this.options.targetParam = this.options.target;
+        this.options.target ??= getFixture();
+        let selectorMessage = `${this.options.count} of "${this.selector}"`;
+        if (this.options.visible !== undefined) {
+            selectorMessage = `${selectorMessage} ${
+                this.options.visible ? "visible" : "invisible"
+            }`;
+        }
+        if (this.options.targetParam) {
+            selectorMessage = `${selectorMessage} inside a specific target`;
+        }
+        if (this.options.parent) {
+            selectorMessage = `${selectorMessage} inside a specific parent`;
+        }
+        if (this.options.contains) {
+            selectorMessage = `${selectorMessage} with a specified sub-contains`;
+        }
+        if (this.options.text !== undefined) {
+            selectorMessage = `${selectorMessage} with text "${this.options.text}"`;
+        }
+        if (this.options.textContent !== undefined) {
+            selectorMessage = `${selectorMessage} with textContent "${this.options.textContent}"`;
+        }
+        if (this.options.value !== undefined) {
+            selectorMessage = `${selectorMessage} with value "${this.options.value}"`;
+        }
+        if (this.options.scroll !== undefined) {
+            selectorMessage = `${selectorMessage} with scroll "${this.options.scroll}"`;
+        }
+        if (this.options.after !== undefined) {
+            selectorMessage = `${selectorMessage} after a specified element`;
+        }
+        if (this.options.before !== undefined) {
+            selectorMessage = `${selectorMessage} before a specified element`;
+        }
+        this.selectorMessage = selectorMessage;
+        if (this.options.contains && !Array.isArray(this.options.contains[0])) {
+            this.options.contains = [this.options.contains];
+        }
+        if (this.options.count) {
+            hasUsedContainsPositively = true;
+        } else if (!hasUsedContainsPositively) {
+            throw new Error(
+                `Starting a test with "contains" of count 0 for selector "${this.selector}" is useless because it might immediately resolve. Start the test by checking that an expected element actually exists.`
+            );
+        }
+        /** @type {string} */
+        this.successMessage = undefined;
+        /** @type {function} */
+        this.executeError = undefined;
+    }
+
+    /**
+     * Starts this contains check, either immediately resolving if there is a
+     * match, or registering appropriate listeners and waiting until there is a
+     * match or a timeout (resolving or rejecting respectively).
+     *
+     * Success or failure messages will be logged with QUnit as well.
+     *
+     * @returns {Promise}
+     */
+    run() {
+        this.done = false;
+        this.def = makeDeferred();
+        this.scrollListeners = new Set();
+        this.onScroll = () => this.runOnce("after scroll");
+        if (!this.runOnce("immediately")) {
+            this.timer = setTimeout(
+                () => this.runOnce("Timeout of 5 seconds", { crashOnFail: true }),
+                5000
+            );
+            this.observer = new MutationObserver((mutations) => {
+                try {
+                    this.runOnce("after mutations");
+                } catch (e) {
+                    this.def.reject(e); // prevents infinite loop in case of programming error
+                }
+            });
+            this.observer.observe(this.options.target, {
+                attributes: true,
+                childList: true,
+                subtree: true,
+            });
+            registerCleanup(() => {
+                if (!this.done) {
+                    this.runOnce("Test ended", { crashOnFail: true });
+                }
+            });
+        }
+        return this.def;
+    }
+
+    /**
+     * Runs this contains check once, immediately returning the result (or
+     * undefined), and possibly resolving or rejecting the main promise
+     * (and printing QUnit log) depending on options.
+     * If undefined is returned it means the check was not successful.
+     *
+     * @param {string} whenMessage
+     * @param {Object} [options={}]
+     * @param {boolean} [options.crashOnFail=false]
+     * @param {boolean} [options.executeOnSuccess=true]
+     * @returns {HTMLElement[]|undefined}
+     */
+    runOnce(whenMessage, { crashOnFail = false, executeOnSuccess = true } = {}) {
+        const res = this.select();
+        if (res?.length === this.options.count || crashOnFail) {
+            // clean before doing anything else to avoid infinite loop due to side effects
+            this.observer?.disconnect();
+            clearTimeout(this.timer);
+            for (const el of this.scrollListeners ?? []) {
+                el.removeEventListener("scroll", this.onScroll);
+            }
+            this.done = true;
+        }
+        if (res?.length === this.options.count) {
+            this.successMessage = `Found ${this.selectorMessage} (${whenMessage})`;
+            if (executeOnSuccess) {
+                this.executeAction(res[0]);
+            }
+            return res;
+        } else {
+            this.executeError = () => {
+                let message = `Failed to find ${this.selectorMessage} (${whenMessage}).`;
+                message = res
+                    ? `${message} Found ${res.length} instead.`
+                    : `${message} Parent not found.`;
+                if (this.parentContains) {
+                    if (this.parentContains.successMessage) {
+                        log(true, this.parentContains.successMessage);
+                    } else {
+                        this.parentContains.executeError();
+                    }
+                }
+                log(false, message);
+                this.def?.reject(new Error(message));
+                for (const childContains of this.childrenContains || []) {
+                    if (childContains.successMessage) {
+                        log(true, childContains.successMessage);
+                    } else {
+                        childContains.executeError();
+                    }
+                }
+            };
+            if (crashOnFail) {
+                this.executeError();
+            }
+        }
+    }
+
+    /**
+     * Executes the action(s) given to this constructor on the found element,
+     * prints the success messages, and resolves the main deferred.
+
+     * @param {HTMLElement} el
+     */
+    executeAction(el) {
+        let message = this.successMessage;
+        if (this.options.click) {
+            message = `${message} and clicked it`;
+            webClick(el, undefined, {
+                mouseEventInit: this.options.click,
+                skipDisabledCheck: true,
+                skipVisibilityCheck: true,
+            });
+        }
+        if (this.options.dragenterFiles) {
+            message = `${message} and dragentered ${this.options.dragenterFiles.length} file(s)`;
+            const ev = new Event("dragenter", { bubbles: true });
+            Object.defineProperty(ev, "dataTransfer", {
+                value: createFakeDataTransfer(this.options.dragenterFiles),
+            });
+            el.dispatchEvent(ev);
+        }
+        if (this.options.dragoverFiles) {
+            message = `${message} and dragovered ${this.options.dragoverFiles.length} file(s)`;
+            const ev = new Event("dragover", { bubbles: true });
+            Object.defineProperty(ev, "dataTransfer", {
+                value: createFakeDataTransfer(this.options.dragoverFiles),
+            });
+            el.dispatchEvent(ev);
+        }
+        if (this.options.dropFiles) {
+            message = `${message} and dropped ${this.options.dropFiles.length} file(s)`;
+            const ev = new Event("drop", { bubbles: true });
+            Object.defineProperty(ev, "dataTransfer", {
+                value: createFakeDataTransfer(this.options.dropFiles),
+            });
+            el.dispatchEvent(ev);
+        }
+        if (this.options.inputFiles) {
+            message = `${message} and inputted ${this.options.inputFiles.length} file(s)`;
+            // could not use _createFakeDataTransfer as el.files assignation will only
+            // work with a real FileList object.
+            const dataTransfer = new window.DataTransfer();
+            for (const file of this.options.inputFiles) {
+                dataTransfer.items.add(file);
+            }
+            el.files = dataTransfer.files;
+            /**
+             * Changing files programatically is not supposed to trigger the event but
+             * it does in Chrome versions before 73 (which is on runbot), so in that
+             * case there is no need to make a manual dispatch, because it would lead to
+             * the files being added twice.
+             */
+            const versionRaw = navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./);
+            const chromeVersion = versionRaw ? parseInt(versionRaw[2], 10) : false;
+            if (!chromeVersion || chromeVersion >= 73) {
+                el.dispatchEvent(new Event("change"));
+            }
+        }
+        if (this.options.insertText !== undefined) {
+            message = `${message} and inserted text "${this.options.insertText.content}" (replace: ${this.options.insertText.replace})`;
+            el.focus();
+            if (this.options.insertText.replace) {
+                el.value = "";
+                el.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Backspace" }));
+                el.dispatchEvent(new window.KeyboardEvent("keyup", { key: "Backspace" }));
+                el.dispatchEvent(new window.InputEvent("input"));
+            }
+            for (const char of this.options.insertText.content) {
+                el.value += char;
+                el.dispatchEvent(new window.KeyboardEvent("keydown", { key: char }));
+                el.dispatchEvent(new window.KeyboardEvent("keyup", { key: char }));
+                el.dispatchEvent(new window.InputEvent("input"));
+            }
+            el.dispatchEvent(new window.InputEvent("change"));
+        }
+        if (this.options.pasteFiles) {
+            message = `${message} and pasted ${this.options.pasteFiles.length} file(s)`;
+            const ev = new Event("paste", { bubbles: true });
+            Object.defineProperty(ev, "clipboardData", {
+                value: createFakeDataTransfer(this.options.pasteFiles),
+            });
+            el.dispatchEvent(ev);
+        }
+        if (this.options.setFocus) {
+            message = `${message} and focused it`;
+            el.focus();
+        }
+        if (this.options.setScroll !== undefined) {
+            message = `${message} and set scroll to "${this.options.setScroll}"`;
+            el.scrollTop =
+                this.options.setScroll === "bottom" ? el.scrollHeight : this.options.setScroll;
+        }
+        if (this.options.triggerEvents) {
+            message = `${message} and triggered "${this.options.triggerEvents.join(", ")}" events`;
+            webTriggerEvents(el, null, this.options.triggerEvents, {
+                skipVisibilityCheck: true,
+            });
+        }
+        if (this.parentContains) {
+            log(true, this.parentContains.successMessage);
+        }
+        log(true, message);
+        for (const childContains of this.childrenContains) {
+            log(true, childContains.successMessage);
+        }
+        this.def?.resolve();
+    }
+
+    /**
+     * Returns the found element(s) according to this constructor setup.
+     * If undefined is returned it means the parent cannot be found
+     *
+     * @returns {HTMLElement[]|undefined}
+     */
+    select() {
+        const target = this.selectParent();
+        if (!target) {
+            return;
+        }
+        const baseRes = [...target.querySelectorAll(this.selector)]
+            .map((el) => (this.options.shadowRoot ? el.shadowRoot : el))
+            .filter((el) => el);
+        /** @type {Contains[]} */
+        this.childrenContains = [];
+        const res = baseRes.filter((el, currentIndex) => {
+            let condition =
+                (this.options.textContent === undefined ||
+                    el.textContent.trim() === this.options.textContent) &&
+                (this.options.value === undefined || el.value === this.options.value) &&
+                (this.options.scroll === undefined ||
+                    (this.options.scroll === "bottom"
+                        ? Math.abs(el.scrollHeight - el.clientHeight - el.scrollTop) <= 1
+                        : Math.abs(el.scrollTop - this.options.scroll) <= 1));
+            if (condition && this.options.text !== undefined) {
+                if (
+                    el.textContent.trim() !== this.options.text &&
+                    [...el.querySelectorAll("*")].every(
+                        (el) => el.textContent.trim() !== this.options.text
+                    )
+                ) {
+                    condition = false;
+                }
+            }
+            if (condition && this.options.contains) {
+                for (const param of this.options.contains) {
+                    const childContains = new Contains(param[0], { ...param[1], target: el });
+                    if (
+                        !childContains.runOnce(`as child of el ${currentIndex + 1})`, {
+                            executeOnSuccess: false,
+                        })
+                    ) {
+                        condition = false;
+                    }
+                    this.childrenContains.push(childContains);
+                }
+            }
+            if (condition && this.options.visible !== undefined) {
+                if (isVisible(el) !== this.options.visible) {
+                    condition = false;
+                }
+            }
+            if (condition && this.options.after) {
+                const afterContains = new Contains(this.options.after[0], {
+                    ...this.options.after[1],
+                    target,
+                });
+                const afterEl = afterContains.runOnce(`as "after"`, {
+                    executeOnSuccess: false,
+                })?.[0];
+                if (
+                    !afterEl ||
+                    !(el.compareDocumentPosition(afterEl) & Node.DOCUMENT_POSITION_PRECEDING)
+                ) {
+                    condition = false;
+                }
+                this.childrenContains.push(afterContains);
+            }
+            if (condition && this.options.before) {
+                const beforeContains = new Contains(this.options.before[0], {
+                    ...this.options.before[1],
+                    target,
+                });
+                const beforeEl = beforeContains.runOnce(`as "before"`, {
+                    executeOnSuccess: false,
+                })?.[0];
+                if (
+                    !beforeEl ||
+                    !(el.compareDocumentPosition(beforeEl) & Node.DOCUMENT_POSITION_FOLLOWING)
+                ) {
+                    condition = false;
+                }
+                this.childrenContains.push(beforeContains);
+            }
+            return condition;
+        });
+        if (
+            this.options.scroll !== undefined &&
+            this.scrollListeners &&
+            baseRes.length === this.options.count &&
+            res.length !== this.options.count
+        ) {
+            for (const el of baseRes) {
+                if (!this.scrollListeners.has(el)) {
+                    this.scrollListeners.add(el);
+                    el.addEventListener("scroll", this.onScroll);
+                }
+            }
+        }
+        return res;
+    }
+
+    /**
+     * Returns the found element that should act as the target (parent) for the
+     * main selector.
+     * If undefined is returned it means the parent cannot be found.
+     *
+     * @returns {HTMLElement|undefined}
+     */
+    selectParent() {
+        if (this.options.parent) {
+            this.parentContains = new Contains(this.options.parent[0], {
+                ...this.options.parent[1],
+                target: this.options.target,
+            });
+            return this.parentContains.runOnce(`as parent`, { executeOnSuccess: false })?.[0];
+        }
+        return this.options.target;
+    }
+}
+
+/**
+ * Waits until `count` elements matching the given `selector` are present in
+ * `options.target`.
+ *
+ * @param {string} selector
+ * @param {ContainsOptions} [options]
+ * @returns {Promise}
+ */
+__exports.contains = contains; async function contains(selector, options) {
+    await new Contains(selector, options).run();
+}
+
+const stepState = {
+    expectedSteps: null,
+    deferred: null,
+    timeout: null,
+    currentSteps: [],
+
+    clear() {
+        clearTimeout(this.timeout);
+        this.timeout = null;
+        this.deferred = null;
+        this.currentSteps = [];
+        this.expectedSteps = null;
+    },
+
+    check({ crashOnFail = false } = {}) {
+        const success =
+            this.expectedSteps.length === this.currentSteps.length &&
+            this.expectedSteps.every((s, i) => s === this.currentSteps[i]);
+        if (!success && !crashOnFail) {
+            return;
+        }
+        QUnit.config.current.assert.verifySteps(this.expectedSteps);
+        if (success) {
+            this.deferred.resolve();
+        } else {
+            this.deferred.reject(new Error("Steps do not match."));
+        }
+        this.clear();
+    },
+};
+
+if (window.QUnit) {
+    QUnit.testStart(() =>
+        registerCleanup(() => {
+            if (stepState.expectedSteps) {
+                stepState.check({ crashOnFail: true });
+            } else {
+                stepState.clear();
+            }
+        })
+    );
+}
+
+/**
+ * Indicate the completion of a test step. This step must then be verified by
+ * calling `assertSteps`.
+ *
+ * @param {string} step
+ */
+__exports.step = step; function step(step) {
+    stepState.currentSteps.push(step);
+    QUnit.config.current.assert.step(step);
+    if (stepState.expectedSteps) {
+        stepState.check();
+    }
+}
+
+/**
+ * Wait for the given steps to be executed or for the timeout to be reached.
+ *
+ * @param {string[]} steps
+ */
+__exports.assertSteps = assertSteps; function assertSteps(steps) {
+    if (stepState.expectedSteps) {
+        stepState.check({ crashOnFail: true });
+    }
+    stepState.expectedSteps = steps;
+    stepState.deferred = makeDeferred();
+    stepState.timeout = setTimeout(() => stepState.check({ crashOnFail: true }), 2000);
+    stepState.check();
+    return stepState.deferred;
+}
+
+return __exports;
+});
+;
+
+/********************************************************************
+*  Filepath: /mail/static/tests/tours/activity_date_format_tour.js  *
+*  Lines: 49                                                        *
+********************************************************************/
+odoo.define('@mail/../tests/tours/activity_date_format_tour', ['@web/core/registry'], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module **/
+
+const { registry } = require("@web/core/registry");
+
+registry.category("web_tour.tours").add("mail_activity_date_format", {
+    test: true,
+    steps: () => [
+        {
+            trigger: "button:contains('Activities')",
+        },
+        {
+            trigger: "input[id*='activity_type_id']",
+            run: "click",
+        },
+        {
+            trigger: ".dropdown-item:contains('To-Do')",
+        },
+        {
+            trigger: "div[name='summary'] input",
+            run: "text Go Party",
+        },
+        {
+            trigger: "button:contains('Schedule')",
+        },
+        {
+            trigger: ".o-mail-Activity:contains('Go Party')",
+        },
+        {
+            trigger: ".fa-info-circle",
+            run: "click",
+        },
+        // Format expected from the server for 9 AM at the first day of 2024 is date_format = "%d/%b/%y", time_format = "%I:%M:%S %p".
+        {
+            trigger: ".o-mail-Activity-details tr:contains('Created') td:contains('01/Jan/24 09:00:00 AM')",
+            isCheck: true,
+        },
+        {
+            // Default due date is 5 days after creation date.
+            trigger: ".o-mail-Activity-details tr:contains('Due on') td:contains('06/Jan/24')",
+            isCheck: true,
+        }
+    ],
+});
+
+return __exports;
+});
+;
+
+/************************************************************************
+*  Filepath: /mail/static/tests/tours/discuss_channel_as_guest_tour.js  *
+*  Lines: 34                                                            *
+************************************************************************/
+odoo.define('@mail/../tests/tours/discuss_channel_as_guest_tour', ['@web/core/registry'], function (require) {
+'use strict';
+let __exports = {};
+/* @odoo-module */
+
+const { registry } = require("@web/core/registry");
+
+registry.category("web_tour.tours").add("discuss_channel_as_guest_tour.js", {
+        test: true,
+        steps: () => [
+            {
+                content: "Channel secret token has been hidden on welcome page",
+                trigger: ".o-mail-WelcomePage",
+                run() {
+                    if (!window.location.pathname.startsWith("/discuss/channel")) {
+                        console.error("Channel secret token is still present in URL.");
+                    }
+                },
+            },
+            {
+                content: "Click join",
+                trigger: "button[title='Join Channel']",
+                extraTrigger: ".o-mail-Thread",
+            },
+            {
+                content: "Check that we are on channel page",
+                trigger: ".o-mail-Thread",
+                run() {},
+            },
+        ],
+    });
+
+return __exports;
+});
+;
+
+/**********************************************************************
+*  Filepath: /mail/static/tests/tours/discuss_channel_public_tour.js  *
+*  Lines: 159                                                         *
+**********************************************************************/
+odoo.define('@mail/../tests/tours/discuss_channel_public_tour', ['@web/core/registry', '@web/../tests/utils'], function (require) {
+'use strict';
+let __exports = {};
+/* @odoo-module */
+
+const { registry } = require("@web/core/registry");
+const { click, contains, createFile, inputFiles } = require("@web/../tests/utils");
+
+registry.category("web_tour.tours").add("discuss_channel_public_tour.js", {
+    test: true,
+    steps: () => [
+        {
+            trigger: ".o-mail-DiscussPublic",
+            extraTrigger: ".o-mail-Thread",
+            run() {},
+        },
+        {
+            content: "Check that we are on channel page",
+            trigger: ".o-mail-Thread",
+            run() {
+                if (!window.location.pathname.startsWith("/discuss/channel")) {
+                    console.error("Channel secret token is still present in URL.");
+                }
+                const { missing, failed, unloaded } = odoo.loader.findErrors();
+                if ([missing, failed, unloaded].some((arr) => arr.length)) {
+                    console.error(
+                        "Couldn't load all JS modules.",
+                        JSON.stringify({ missing, failed, unloaded })
+                    );
+                }
+                document.body.classList.add("o_discuss_channel_public_modules_loaded");
+            },
+            extraTrigger: ".o_discuss_channel_public_modules_loaded",
+        },
+        {
+            content: "Wait for all modules loaded check in previous step",
+            trigger: ".o_discuss_channel_public_modules_loaded",
+            run() {},
+        },
+        {
+            content: "Write something in composer",
+            trigger: ".o-mail-Composer-input",
+            run: "text cheese",
+        },
+        {
+            content: "Add one file in composer",
+            trigger: ".o-mail-Composer button[aria-label='Attach files']",
+            async run() {
+                await inputFiles(".o-mail-Composer-coreMain .o_input_file", [
+                    await createFile({
+                        content: "hello, world",
+                        contentType: "text/plain",
+                        name: "text.txt",
+                    }),
+                ]);
+            },
+        },
+        {
+            content: "Check the earlier provided attachment is listed",
+            trigger: '.o-mail-AttachmentCard[title="text.txt"]',
+            extra_trigger: ".o-mail-AttachmentCard:not(.o-isUploading)", // waiting the attachment to be uploaded
+            run() {},
+        },
+        {
+            content: "Send message",
+            trigger: ".o-mail-Composer-send:enabled",
+        },
+        {
+            content: "Check message is shown",
+            trigger: '.o-mail-Message-body:contains("cheese")',
+            run() {},
+        },
+        {
+            content: "Check message contains the attachment",
+            trigger: '.o-mail-Message .o-mail-AttachmentCard:contains("text.txt")',
+            run() {},
+        },
+        {
+            content: "Click on more menu",
+            trigger: ".o-mail-Message [title='Expand']",
+        },
+        {
+            content: "Click on edit",
+            trigger: ".o-mail-Message [title='Edit']",
+        },
+        {
+            content: "Edit message",
+            trigger: ".o-mail-Message .o-mail-Composer-input",
+            run: "text vegetables",
+        },
+        {
+            content: "Add one more file in composer",
+            trigger: ".o-mail-Message .o-mail-Composer button[aria-label='Attach files']",
+            async run() {
+                inputFiles(".o-mail-Message .o-mail-Composer-coreMain .o_input_file", [
+                    await createFile({
+                        content: "hello 2",
+                        contentType: "text/plain",
+                        name: "extra.txt",
+                    }),
+                ]);
+            },
+        },
+        {
+            content: "Check the earlier provided extra attachment is listed",
+            trigger: '.o-mail-Message .o-mail-Composer .o-mail-AttachmentCard[title="extra.txt"]',
+            extra_trigger:
+                ".o-mail-Message .o-mail-Composer .o-mail-AttachmentCard:not(.o-isUploading)", // waiting the attachment to be uploaded
+            run() {},
+        },
+        {
+            content: "Save edited message",
+            trigger: ".o-mail-Message a:contains(save)",
+        },
+        {
+            content: "Check message is edited",
+            trigger: '.o-mail-Message-body:contains("vegetables")',
+            run() {},
+        },
+        {
+            content: "Check edited message contains the first attachment",
+            trigger: '.o-mail-Message .o-mail-AttachmentCard:contains("text.txt")',
+            run() {},
+        },
+        {
+            content: "Check edited message contains the extra attachment",
+            trigger: '.o-mail-Message .o-mail-AttachmentCard:contains("extra.txt")',
+            async run() {
+                await click(".o-mail-AttachmentCard-unlink", {
+                    parent: [".o-mail-AttachmentCard", { text: "extra.txt" }],
+                });
+                await click(".btn", { text: "Ok", parent: [".modal", { text: "Confirmation" }] });
+                await contains(".o-mail-AttachmentCard", { text: "extra.txt", count: 0 });
+            },
+        },
+        {
+            content: "Open search panel",
+            trigger: "button[title='Search Messages']",
+        },
+        {
+            content: "Search for the attachment name",
+            trigger: ".o_searchview_input",
+            run: "text text.txt",
+        },
+        {
+            content: "Trigger the search",
+            trigger: "button[aria-label='Search button']",
+        },
+        {
+            content: "Check that searched message contains the attachment",
+            trigger:
+                '.o-mail-SearchMessagesPanel .o-mail-Message .o-mail-AttachmentCard:contains("text.txt")',
+            run() {},
+        },
+    ],
+});
+
+return __exports;
+});
+;
+
+/***************************************************************
+*  Filepath: /mail/static/tests/tours/discuss_channel_tour.js  *
+*  Lines: 104                                                  *
+***************************************************************/
+odoo.define('@mail/../tests/tours/discuss_channel_tour', ['@web/core/l10n/translation', '@web/core/registry', '@odoo/owl'], function (require) {
+'use strict';
+let __exports = {};
+/* @odoo-module */
+
+const { _t } = require("@web/core/l10n/translation");
+const { registry } = require("@web/core/registry");
+
+const { markup } = require("@odoo/owl");
+
+registry.category("web_tour.tours").add("discuss_channel_tour", {
+    url: "/web#action=mail.action_discuss",
+    sequence: 80,
+    steps: () => [
+        {
+            trigger: ".o-mail-DiscussSidebarCategory-channel .o-mail-DiscussSidebarCategory-add",
+            content: markup(
+                _t(
+                    "<p>Channels make it easy to organize information across different topics and groups.</p> <p>Try to <b>create your first channel</b> (e.g. sales, marketing, product XYZ, after work party, etc).</p>"
+                )
+            ),
+            position: "bottom",
+        },
+        {
+            trigger: ".o-discuss-ChannelSelector input",
+            content: markup(_t("<p>Create a channel here.</p>")),
+            position: "bottom",
+            auto: true,
+            run: function (actions) {
+                var t = new Date().getTime();
+                actions.text("SomeChannel_" + t, this.$anchor);
+            },
+        },
+        {
+            trigger: ".o-discuss-ChannelSelector-list",
+            extra_trigger: ".o-discuss-ChannelSelector-suggestion",
+            content: markup(_t("<p>Create a public or private channel.</p>")),
+            position: "right",
+            run() {
+                document.querySelector(".o-discuss-ChannelSelector-suggestion").click();
+            },
+        },
+        {
+            trigger: ".o-mail-Composer-input",
+            content: markup(
+                _t(
+                    "<p><b>Write a message</b> to the members of the channel here.</p> <p>You can notify someone with <i>'@'</i> or link another channel with <i>'#'</i>. Start your message with <i>'/'</i> to get the list of possible commands.</p>"
+                )
+            ),
+            position: "top",
+            width: 350,
+            run: function (actions) {
+                var t = new Date().getTime();
+                actions.text("SomeText_" + t, this.$anchor);
+            },
+        },
+        {
+            trigger: ".o-mail-Composer-send:enabled",
+            content: _t("Post your message on the thread"),
+            position: "top",
+        },
+        {
+            trigger: ".o-mail-Message",
+            content: _t("Click on your message"),
+            position: "top",
+        },
+        {
+            trigger: ".o-mail-Message [title='Expand']",
+            content: _t("Expand options"),
+            position: "top",
+        },
+        {
+            trigger: ".o-mail-Message [title='Mark as Todo']",
+            content: markup(
+                _t("Messages can be <b>starred</b> to remind you to check back later.")
+            ),
+            position: "bottom",
+        },
+        {
+            trigger: "button:contains(Starred)",
+            content: _t(
+                "Once a message has been starred, you can come back and review it at any time here."
+            ),
+            position: "bottom",
+        },
+        {
+            trigger: ".o-mail-DiscussSidebarCategory-chat .o-mail-DiscussSidebarCategory-add",
+            content: markup(
+                _t(
+                    "<p><b>Chat with coworkers</b> in real-time using direct messages.</p><p><i>You might need to invite users from the Settings app first.</i></p>"
+                )
+            ),
+            position: "bottom",
+        },
+        {
+            trigger: ".o-discuss-ChannelSelector",
+            auto: true,
+            isCheck: true,
+        },
+    ],
+});
+
+return __exports;
+});
+;
+
+/******************************************************************************
+*  Filepath: /mail/static/tests/tours/mail_activity_schedule_from_chatter.js  *
+*  Lines: 61                                                                  *
+******************************************************************************/
+odoo.define('@mail/../tests/tours/mail_activity_schedule_from_chatter', ['@web/core/registry'], function (require) {
+'use strict';
+let __exports = {};
+/* @odoo-module */
+
+const { registry } = require("@web/core/registry");
+
+registry.category("web_tour.tours").add("mail_activity_schedule_from_chatter", {
+    test: true,
+    steps: () => [
+        {
+            trigger: "button:contains('Activities')",
+        },
+        {
+            trigger: "input[id*='activity_type_id']",
+            run: "click",
+        },
+        {
+            trigger: ".dropdown-item:contains('Call')",
+        },
+        {
+            trigger: "input[id*='activity_type_id']:propValue('Call')",
+            run: () => {},
+        },
+        {
+            extra_trigger: "button:contains('Schedule')",
+            trigger: "input[id*='activity_type_id']",
+            run: "click",
+        },
+        {
+            trigger: ".dropdown-item:contains('To-Do')",
+        },
+        {
+            trigger: "div[name='summary'] input",
+            run: "text Play Mario Party",
+        },
+        {
+            trigger: "button:contains('Schedule')",
+        },
+        {
+            trigger: ".o-mail-Activity:contains('Play Mario Party')",
+        },
+        {
+            trigger: "button:contains('Activities')",
+        },
+        {
+            trigger: "div[name='summary'] input",
+            run: "text Play Mario Kart",
+        },
+        {
+            trigger: "button:contains('Mark as Done')",
+        },
+        {
+            trigger: ".o-mail-Message:contains('Play Mario Kart')",
+            isCheck: true,
+        },
+    ],
+});
+
+return __exports;
+});
+;
+
+/******************************************************************
+*  Filepath: /mail/static/tests/tours/mail_composer_test_tour.js  *
+*  Lines: 134                                                     *
+******************************************************************/
+odoo.define('@mail/../tests/tours/mail_composer_test_tour', ['@web/core/registry', '@web/../tests/utils'], function (require) {
+'use strict';
+let __exports = {};
+/* @odoo-module */
+
+const { registry } = require("@web/core/registry");
+const { contains, createFile, inputFiles } = require("@web/../tests/utils");
+
+/**
+ * This tour depends on data created by python test in charge of launching it.
+ * It is not intended to work when launched from interface. It is needed to test
+ * an action (action manager) which is not possible to test with QUnit.
+ * @see mail/tests/test_mail_composer.py
+ */
+registry.category("web_tour.tours").add("mail/static/tests/tours/mail_composer_test_tour.js", {
+    test: true,
+    steps: () => [
+        {
+            content: "Wait for the chatter to be fully loaded",
+            trigger: ".o-mail-Chatter",
+            async run() {
+                await contains(".o-mail-Message", { count: 1 });
+            },
+        },
+        {
+            content: "Click on Send Message",
+            trigger: "button:contains(Send message)",
+        },
+        {
+            content: "Write something in composer",
+            trigger: ".o-mail-Composer-input",
+            run: "text blahblah @Not",
+        },
+        {
+            content: "Mention a partner",
+            trigger: ".o-mail-Composer-suggestion:contains(Not A Demo User)",
+        },
+        {
+            content: "Add one file in composer",
+            trigger: ".o-mail-Composer button[aria-label='Attach files']",
+            async run() {
+                await inputFiles(".o-mail-Composer-coreMain .o_input_file", [
+                    await createFile({
+                        content: "hello, world",
+                        contentType: "text/plain",
+                        name: "text.txt",
+                    }),
+                ]);
+            },
+        },
+        {
+            content: "Open full composer",
+            trigger: "button[aria-label='Full composer']",
+            extra_trigger: ".o-mail-AttachmentCard:not(.o-isUploading)", // waiting the attachment to be uploaded
+        },
+        {
+            content: "Check composer keeps open after pushing Escape",
+            trigger: ".o_mail_composer_form_view",
+            run: () => {
+                window.dispatchEvent(
+                    new KeyboardEvent("keydown", {
+                        bubbles: true,
+                        key: "Escape",
+                    })
+                );
+            },
+        },
+        {
+            content: "Check the earlier provided attachment is listed",
+            trigger: '.o_attachment[title="text.txt"]',
+            run() {},
+        },
+        {
+            content: "Check subject is autofilled",
+            trigger: '[name="subject"] input',
+            run() {
+                const subjectValue = document.querySelector('[name="subject"] input').value;
+                if (subjectValue !== "Jane") {
+                    console.error(
+                        `Full composer should have "Jane" in subject input (actual: ${subjectValue})`
+                    );
+                }
+            },
+        },
+        {
+            content: "Check composer content is kept",
+            trigger: '.o_field_html[name="body"]',
+            run() {
+                const bodyContent = document.querySelector(
+                    '.o_field_html[name="body"]'
+                ).textContent;
+                if (!bodyContent.includes("blahblah @Not A Demo User")) {
+                    console.error(
+                        `Full composer should contain text from small composer ("blahblah @Not A Demo User") in body input (actual: ${bodyContent})`
+                    );
+                }
+                const mentionLink = document.querySelector(
+                    '.o_field_html[name="body"] a'
+                ).textContent;
+                if (!mentionLink.includes("@Not A Demo User")) {
+                    console.error(
+                        `Full composer should contain mention link from small composer ("@Not A Demo User") in body input)`
+                    );
+                }
+            },
+        },
+        {
+            content: "Open templates",
+            trigger: '.o_field_widget[name="template_id"] input',
+        },
+        {
+            content: "Check a template is listed",
+            in_modal: false,
+            trigger: '.ui-autocomplete .ui-menu-item a:contains("Test template")',
+            run() {},
+        },
+        {
+            content: "Send message",
+            trigger: ".o_mail_send",
+        },
+        {
+            content: "Check message is shown",
+            trigger: '.o-mail-Message-body:contains("blahblah @Not A Demo User")',
+        },
+        {
+            content: "Check message contains the attachment",
+            trigger: '.o-mail-Message .o-mail-AttachmentCard:contains("text.txt")',
+            isCheck: true,
+        },
+    ],
+});
+
+return __exports;
+});
+;
+
+/***********************************************************************
+*  Filepath: /mail/static/tests/tours/mail_message_load_order_tour.js  *
+*  Lines: 76                                                           *
+***********************************************************************/
+odoo.define('@mail/../tests/tours/mail_message_load_order_tour', ['@web/core/registry', '@web/../tests/utils'], function (require) {
+'use strict';
+let __exports = {};
+/* @odoo-module */
+
+const { registry } = require("@web/core/registry");
+const { contains, scroll } = require("@web/../tests/utils");
+
+registry.category("web_tour.tours").add("mail_message_load_order_tour", {
+    test: true,
+    steps: () => [
+        {
+            trigger: ".o-mail-DiscussSidebarChannel:contains(MyTestChannel)",
+            run: "click",
+        },
+        {
+            trigger: ".o-mail-Thread .o-mail-Message",
+            async run() {
+                await contains(".o-mail-Thread .o-mail-Message", { count: 30 });
+                await contains(".o-mail-Thread", { scroll: "bottom" });
+            },
+        },
+        {
+            trigger: "*[title='Pinned Messages']",
+            run: "click",
+        },
+        {
+            trigger: ".o-mail-MessageCard-jump",
+            run: "click",
+        },
+        {
+            // Messages depends on FETCH_LIMIT (currently set to 30) in
+            // the thread service. Thus, at first load the message range
+            // will be (31 - 60). This trigger ensures the next messages
+            // are fetched after jumping to the message.
+            trigger: ".o-mail-Thread .o-mail-Message:first:not(:contains(31))",
+            async run() {
+                await contains(".o-mail-Thread .o-mail-Message", { count: 16 });
+                await contains(".o-mail-Thread", { scroll: 0 });
+                // ensure 1 - 16 are loaded in order: 15 below and the
+                // one we're loading messages around.
+                const messages = Array.from(
+                    document.querySelectorAll(".o-mail-Thread .o-mail-Message-content")
+                ).map((el) => el.innerText);
+                for (let i = 0; i < 16; i++) {
+                    if (messages[i] !== (i + 1).toString()) {
+                        throw new Error("Wrong message order after loading around");
+                    }
+                }
+                await scroll(".o-mail-Thread", "bottom");
+            },
+        },
+        {
+            // After jumping to the pinned message, the message range
+            // was (1 -16): 15 before (but none were found), 15 after
+            // and the pinned message itself. This trigger ensures the
+            // next messages are fetched after scrolling to the bottom.
+            trigger: ".o-mail-Thread .o-mail-Message:contains(17)",
+            async run() {
+                await contains(".o-mail-Thread .o-mail-Message", { count: 46 });
+                // ensure 1 - 46  are loaded in order.
+                const messages = Array.from(
+                    document.querySelectorAll(".o-mail-Thread .o-mail-Message-content")
+                ).map((el) => el.innerText);
+                for (let i = 0; i < 46; i++) {
+                    if (messages[i] !== (i + 1).toString()) {
+                        throw new Error("Wrong message order after loading after");
+                    }
+                }
+            },
+        },
+    ],
+});
+
+return __exports;
+});
+;
+
+/*********************************************************************************
+*  Filepath: /mail/static/tests/tours/mail_template_dynamic_placeholder_tour.js  *
+*  Lines: 184                                                                    *
+*********************************************************************************/
+odoo.define('@mail/../tests/tours/mail_template_dynamic_placeholder_tour', ['@web/core/registry', '@web/../tests/utils', '@web_tour/tour_service/tour_utils'], function (require) {
+'use strict';
+let __exports = {};
+/* @odoo-module */
+
+const { registry } = require("@web/core/registry");
+const { contains } = require("@web/../tests/utils");
+const { stepUtils } = require("@web_tour/tour_service/tour_utils");
+
+registry.category("web_tour.tours").add("mail_template_dynamic_placeholder_tour", {
+    test: true,
+    url: "/web",
+    steps: () => [
+        stepUtils.showAppsMenuItem(),
+        {
+            content: 'Go into the Setting "app"',
+            trigger: '.o_app[data-menu-xmlid="base.menu_administration"]',
+        },
+        {
+            content: "Open email templates",
+            trigger: 'button[name="open_mail_templates"]',
+        },
+        {
+            content: "Create a new email template",
+            trigger: "button.o_list_button_add",
+        },
+        {
+            content: 'Insert # inside "Subject" input',
+            trigger: 'div[name="subject"] input[type="text"]',
+            async run(actions) {
+                actions.text(`no_model_id #`, this.$anchor);
+                this.$anchor[0].dispatchEvent(
+                    new KeyboardEvent("keydown", { bubbles: true, key: "#" })
+                );
+                await contains("div[name='subject'] input[type='text']", {
+                    value: "no_model_id #",
+                });
+                await contains(".o_notification", {
+                    text: "You need to select a model before opening the dynamic placeholder selector.",
+                });
+            },
+        },
+        {
+            content: 'Select "Contact" model',
+            trigger: 'div[name="model_id"] input[type="text"]',
+            run: "text Contact",
+        },
+        {
+            content: "Wait for the autocomplete RPC",
+            trigger: 'div[name="model_id"] .ui-autocomplete:contains("Contact")',
+            isCheck: true,
+        },
+        {
+            content: "Click on contact",
+            trigger: 'div[name="model_id"] .ui-autocomplete',
+            run: async function () {
+                const contact = Array.from(
+                    document.querySelectorAll(
+                        'div[name="model_id"] .ui-autocomplete .dropdown-item'
+                    )
+                ).find((el) => el.textContent === "Contact");
+                await contact.click();
+            },
+        },
+        {
+            content: "Wait for the drop down to disappear",
+            trigger: 'div[name="model_id"] .o-autocomplete:not(:has(.ui-autocomplete))',
+            run: async () => {
+                // Ensure the system has registered a correct model value before
+                // we try to open the DPH.
+                // It seems that the autocomplete validation can be very slow.
+                await new Promise((r) => setTimeout(r, 200));
+            },
+        },
+        {
+            content: 'Retry insert # inside "Subject" input',
+            trigger: 'div[name="subject"] input[type="text"]',
+            run(actions) {
+                actions.text(`yes_model_id #`, this.$anchor);
+                this.$anchor[0].dispatchEvent(
+                    new KeyboardEvent("keydown", { bubbles: true, key: "#" })
+                );
+            },
+        },
+        {
+            content: "Check if the dynamic placeholder popover is opened",
+            trigger: "div.o_model_field_selector_popover",
+            isCheck: true,
+        },
+        {
+            content: "filter the dph result",
+            trigger: "div.o_model_field_selector_popover_search input[type='text']",
+            run: "text name",
+        },
+        {
+            content: "Click on the first entry of the dynamic placeholder",
+            trigger: 'div.o_model_field_selector_popover li:first-child button:contains("Name")',
+        },
+        {
+            content: "Enter a default value",
+            trigger:
+                'div.o_model_field_selector_popover .o_model_field_selector_default_value_input input[type="text"]',
+            run: "text defValue",
+        },
+        {
+            content: "Click on the the dynamic placeholder default value",
+            trigger: "div.o_model_field_selector_popover li:first-child button",
+        },
+        {
+            content: "Wait for the popover to disappear",
+            trigger: "body:not(:has(.o_model_field_selector_popover))",
+        },
+        {
+            content: "Check if subject value was correclty updated",
+            trigger: 'div[name="subject"] input[type="text"]',
+            run() {
+                const subjectValue = this.$anchor[0].value;
+                const correctValue = "yes_model_id {{object.name or '''defValue'''}}";
+                if (subjectValue !== correctValue) {
+                    console.error(
+                        `Email template should have "${correctValue}" in subject input (actual: ${subjectValue})`
+                    );
+                }
+            },
+        },
+        {
+            content: "Insert tesxt inside editable",
+            trigger: ".note-editable.odoo-editor-editable",
+            run(actions) {
+                actions.text(`/`, this.$anchor);
+                document.querySelector(".note-editable").dispatchEvent(
+                    new InputEvent("input", {
+                        inputType: "insertText",
+                        data: "/",
+                    })
+                );
+            },
+        },
+        {
+            content: "Click on the the dynamic placeholder commandBar options",
+            trigger: "div.oe-powerbox-commandWrapper:contains(Dynamic Placeholder)",
+        },
+        {
+            content: "Check if the dynamic placeholder popover is opened",
+            trigger: "div.o_model_field_selector_popover",
+        },
+        {
+            content: "filter the dph result",
+            trigger: "div.o_model_field_selector_popover_search input[type='text']",
+            run: "text name",
+        },
+        {
+            content: "Click on the first entry of the dynamic placeholder",
+            trigger: 'div.o_model_field_selector_popover li:first-child button:contains("Name")',
+        },
+        {
+            content: "Enter a default value",
+            trigger:
+                'div.o_model_field_selector_popover .o_model_field_selector_default_value_input input[type="text"]',
+            run: "text defValue",
+        },
+        {
+            content: "Click on the the dynamic placeholder default value",
+            trigger: "div.o_model_field_selector_popover li:first-child button",
+        },
+        {
+            content: "Ensure the editable contain the dynamic placeholder t tag",
+            trigger:
+                ".note-editable.odoo-editor-editable t[t-out=\"object.name or '''defValue'''\"]",
+        },
+        {
+            content: "Discard form changes",
+            trigger: "button.o_form_button_cancel",
+        },
+        {
+            content: "Wait for the form view to disappear",
+            trigger: "body:not(:has(.o_form_sheet))",
+            isCheck: true,
+        },
+    ],
+});
+
+return __exports;
+});
+;
+
+/***********************************************************************
+*  Filepath: /mail/static/tests/tours/user_modify_own_profile_tour.js  *
+*  Lines: 41                                                           *
+***********************************************************************/
+odoo.define('@mail/../tests/tours/user_modify_own_profile_tour', ['@web/core/registry'], function (require) {
+'use strict';
+let __exports = {};
+/* @odoo-module */
+
+const { registry } = require("@web/core/registry");
+
+/**
+ * Verify that a user can modify their own profile information.
+ */
+registry.category("web_tour.tours").add("mail/static/tests/tours/user_modify_own_profile_tour.js", {
+    test: true,
+    steps: () => [
+        {
+            content: "Open user account menu",
+            trigger: ".o_user_menu button",
+        },
+        {
+            content: "Open preferences / profile screen",
+            trigger: "[data-menu=settings]",
+        },
+        {
+            content: "Update the email address",
+            trigger: 'div[name="email"] input',
+            run: "text updatedemail@example.com",
+        },
+        {
+            content: "Save the form",
+            trigger: 'button[name="preference_save"]',
+            extra_trigger: "body.modal-open",
+        },
+        {
+            content: "Wait until the modal is closed",
+            isCheck: true,
+            trigger: "body:not(.modal-open)",
+        },
+    ],
+});
+
+return __exports;
+});
+;
+
+/***************************************************
+*  Filepath: /portal/static/tests/tours/portal.js  *
+*  Lines: 39                                       *
+***************************************************/
+odoo.define('@portal/../tests/tours/portal', ['@web/core/registry'], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module **/
+
+const { registry } = require("@web/core/registry");
+
+registry.category("web_tour.tours").add('portal_load_homepage', {
+    test: true,
+    url: '/my',
+    steps: () => [
+        {
+            content: "Check portal is loaded",
+            trigger: 'a[href*="/my/account"]:contains("Edit"):first',
+        },
+        {
+            content: "Load my account details",
+            trigger: 'input[value="Joel Willis"]',
+            isCheck: true,
+        },
+        {
+            content: 'type a different phone number',
+            trigger: 'input[name="phone"]',
+            run: 'text +1 555 666 7788',
+        },
+        {
+            content: "Submit the form",
+            trigger: 'button[type=submit]',
+        },
+        {
+            content: "Check that we are back on the portal",
+            trigger: 'a[href*="/my/account"]:contains("Edit"):first',
+            isCheck: true,
+        }
+    ]
+});
+
+return __exports;
+});
+;
+
+/*************************************************************
+*  Filepath: /account/static/tests/tours/tax_group_tests.js  *
+*  Lines: 135                                                *
+*************************************************************/
+odoo.define('@account/../tests/tours/tax_group_tests', ['@web/core/registry', '@web_tour/tour_service/tour_utils'], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module */
+
+const { registry } = require("@web/core/registry");
+const { stepUtils } = require("@web_tour/tour_service/tour_utils");
+
+registry.category("web_tour.tours").add('account_tax_group', {
+    test: true,
+    url: "/web",
+    steps: () => [stepUtils.showAppsMenuItem(),
+    {
+        id: 'account_menu_click',
+        content: "Go to Invoicing",
+        trigger: '.o_app[data-menu-xmlid="account.menu_finance"]',
+    },
+    {
+        content: "Go to Vendors",
+        trigger: 'span:contains("Vendors")',
+    },
+    {
+        content: "Go to Bills",
+        trigger: 'a:contains("Bills")',
+    },
+    {
+        extra_trigger: '.o_breadcrumb .text-truncate:contains("Bills")',
+        content: "Create new bill",
+        trigger: '.o_control_panel_main_buttons .d-none .o_list_button_add',
+    },
+    // Set a vendor
+    {
+        content: "Add vendor",
+        trigger: 'div.o_field_widget.o_field_res_partner_many2one[name="partner_id"] div input',
+        run: 'text Account Tax Group Partner',
+    },
+    {
+        content: "Valid vendor",
+        trigger: '.ui-menu-item a:contains("Account Tax Group Partner")',
+    },
+    // Add First product
+    {
+        content: "Add items",
+        trigger: 'div[name="invoice_line_ids"] .o_field_x2many_list_row_add a:contains("Add a line")',
+    },
+    {
+        content: "Select input",
+        trigger: 'div[name="invoice_line_ids"] .o_selected_row .o_list_many2one[name="product_id"] input',
+    },
+    {
+        content: "Type item",
+        trigger: 'div[name="invoice_line_ids"] .o_selected_row .o_list_many2one[name="product_id"] input',
+        run: "text Account Tax Group Product",
+    },
+    {
+        content: "Valid item",
+        trigger: '.ui-menu-item-wrapper:contains("Account Tax Group Product")',
+    },
+    // Save account.move
+    {
+        content: "Save the account move",
+        trigger: '.o_form_button_save',
+    },
+    ...stepUtils.saveForm(),
+    // Edit tax group amount
+    {
+        content: "Edit tax group amount",
+        trigger: '.o_tax_group_edit',
+    },
+    {
+        content: "Modify the input value",
+        trigger: '.o_tax_group_edit_input input',
+        run: function (actions) {
+            $('.o_tax_group_edit_input input').val(200);
+            $('.o_tax_group_edit_input input').select();
+            $('.o_tax_group_edit_input input').blur();
+        },
+    },
+    // Check new value for total (with modified tax_group_amount).
+    {
+        content: "Valid total amount",
+        trigger: 'span[name="amount_total"]:contains("800")',
+    },
+    // Modify the quantity of the object
+    {
+        content: "Select item quantity",
+        trigger: 'div[name="invoice_line_ids"] tbody tr.o_data_row .o_list_number[name="quantity"]',
+    },
+    {
+        content: "Change item quantity",
+        trigger: 'div[name="invoice_line_ids"] tbody tr.o_data_row .o_list_number[name="quantity"] input',
+        run: 'text 2',
+    },
+    {
+        content: "Valid the new value",
+        trigger: 'div[name="invoice_line_ids"] tbody tr.o_data_row .o_list_number[name="quantity"] input',
+        run: function (actions) {
+            let keydownEvent = jQuery.Event('keydown');
+            keydownEvent.key = "Enter";
+            this.$anchor.trigger(keydownEvent);
+        },
+    },
+    // Save form
+    {
+        content: "Save the account move",
+        trigger: '.o_form_button_save',
+    },
+    ...stepUtils.saveForm(),
+    // Check new tax group value
+    {
+        content: "Check new value of tax group",
+        trigger: '.o_tax_group_amount_value:contains("120")',
+    },
+    {
+        content: "Edit tax value",
+        trigger: '.o_tax_group_edit_input input',
+        run: 'text 2'
+    },
+    {
+        content: "Check new value of total",
+        trigger: '.oe_subtotal_footer_separator:contains("1,202")',
+    },
+    {
+        content: "Discard changes",
+        trigger: '.o_form_button_cancel',
+    },
+    {
+        content: "Check tax value is reset",
+        trigger: '.o_tax_group_amount_value:contains("120")',
+        isCheck: true,
+    },
+]});
+
+return __exports;
+});
+;
+
+/*********************************************************
+*  Filepath: /sale/static/tests/tours/sale_signature.js  *
+*  Lines: 54                                             *
+*********************************************************/
+odoo.define('@sale/../tests/tours/sale_signature', ['@web/core/registry'], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module **/
+
+const { registry } = require("@web/core/registry");
+
+// This tour relies on data created on the Python test.
+registry.category("web_tour.tours").add('sale_signature', {
+    test: true,
+    url: '/my/quotes',
+    steps: () => [
+    {
+        content: "open the test SO",
+        trigger: 'a:containsExact("test SO")',
+    },
+    {
+        content: "click sign",
+        trigger: 'a:contains("Sign")',
+    },
+    {
+        content: "check submit is enabled",
+        trigger: '.o_portal_sign_submit:enabled',
+        run: function () {},
+    },
+    {
+        content: "click select style",
+        trigger: '.o_web_sign_auto_select_style button',
+    },
+    {
+        content: "click style 4",
+        trigger: '.o_web_sign_auto_select_style .dropdown-item:eq(3)',
+    },
+    {
+        content: "click submit",
+        trigger: '.o_portal_sign_submit:enabled',
+    },
+    {
+        content: "check it's confirmed",
+        trigger: '#quote_content:contains("Thank You")',
+    }, {
+        trigger: '#quote_content',
+        run: function () {
+            window.location.href = window.location.origin + '/web';
+        },  // Avoid race condition at the end of the tour by returning to the home page.
+    },
+    {
+        trigger: 'nav',
+        run: function() {},
+    }
+]});
+
+return __exports;
+});
+;
+
+/**************************************************************
+*  Filepath: /stock/static/tests/tours/stock_picking_tour.js  *
+*  Lines: 180                                                 *
+**************************************************************/
+odoo.define('@stock/../tests/tours/stock_picking_tour', ['@web_tour/tour_service/tour_utils', '@web/core/registry'], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module **/
+const { TourError } = require("@web_tour/tour_service/tour_utils");
+const { registry } = require("@web/core/registry");
+
+registry.category("web_tour.tours").add('test_detailed_op_no_save_1', { test: true, steps: () => [
+    {trigger: '.o_field_x2many_list_row_add > a'},
+    {
+        trigger: ".o_field_widget[name=product_id] input",
+        run: 'text Lot',
+    },
+    {trigger: ".ui-menu-item > a:contains('Product Lot')"},
+    {trigger: ".btn-primary[name=action_confirm]"},
+    {trigger: ".fa-list"},
+    {trigger: "h4:contains('Stock move')"},
+    {trigger: '.o_field_x2many_list_row_add > a'},
+    {
+        trigger: ".o_field_widget[name=lot_name] input",
+        run: 'text lot1',
+    },
+    {
+        trigger: ".o_field_widget[name=quantity] input",
+        run: 'text 4',
+    },
+    {trigger: ".o_form_button_save"},
+    {trigger: ".o_optional_columns_dropdown_toggle"},
+    {
+        trigger: 'input[name="picked"]',
+        content: 'Check the picked field to display the column on the list view.',
+        run: function (actions) {
+            if (!this.$anchor.prop('checked')) {
+                actions.click(this.$anchor);
+            }
+        },
+    },
+    {trigger: ".o_data_cell[name=picked]"},
+    {
+        trigger: ".o_field_widget[name=picked] input",
+        run: function (actions) {
+            if (!this.$anchor.prop('checked')) {
+                actions.click(this.$anchor);
+            }
+        }
+    },
+    {trigger: ".btn-primary[name=button_validate]"},
+    {
+        trigger: ".o_control_panel_actions button:contains('Traceability')",
+        isCheck: true,
+    },
+]});
+
+registry.category("web_tour.tours").add('test_generate_serial_1', { test: true, steps: () => [
+    {trigger: '.o_field_x2many_list_row_add > a'},
+    {
+        trigger: ".o_field_widget[name=product_id] input",
+        run: 'text Serial',
+    },
+    {trigger: ".ui-menu-item > a:contains('Product Serial')"},
+    {trigger: ".btn-primary[name=action_confirm]"},
+    {trigger: ".fa-list"},
+    {trigger: "h4:contains('Stock move')"},
+    {trigger: '.o_widget_generate_serials > button'},
+    {trigger: "h4:contains('Generate Serials numbers')"},
+    {
+        trigger: "div[name=next_serial] input",
+        run: 'text serial_n_1',
+    },
+    {
+        trigger: "div[name=next_serial_count] input",
+        run: 'text 5',
+    },
+    {trigger: ".btn-primary:contains('Generate')"},
+    {
+        trigger: "span[data-tooltip=Quantity]:contains('5')",
+        run: () => {
+            const nbLines = document.querySelectorAll(".o_field_cell[name=lot_name]").length;
+            if (nbLines !== 5){
+                throw new TourError("wrong number of move lines generated. " + nbLines + " instead of 5");
+            }
+        },
+    },
+    {trigger: ".o_form_button_save"},
+    {trigger: ".o_optional_columns_dropdown_toggle"},
+    {
+        trigger: 'input[name="picked"]',
+        content: 'Check the picked field to display the column on the list view.',
+        run: function (actions) {
+            if (!this.$anchor.prop('checked')) {
+                actions.click(this.$anchor);
+            }
+        },
+    },
+    {trigger: ".o_data_cell[name=picked]"},
+    {
+        trigger: ".o_field_widget[name=picked] input",
+        run: function (actions) {
+            if (!this.$anchor.prop('checked')) {
+                actions.click(this.$anchor);
+            }
+        }
+    },
+    {trigger: ".btn-primary[name=button_validate]"},
+    {
+        trigger: ".o_control_panel_actions button:contains('Traceability')",
+        isCheck: true,
+    },
+]});
+
+registry.category("web_tour.tours").add('test_add_new_line', {
+    test: true,
+    steps: () => [
+        {
+            extra_trigger: '.o_form_editable',
+            trigger: '.o_field_x2many_list_row_add > a'
+        },
+        {
+            trigger: ".o_field_widget[name=product_id] input",
+            run: 'text two',
+        },
+        { trigger: ".ui-menu-item > a:contains('Product two')" },
+        { trigger: ".fa-list:eq(1)" },
+        { trigger: "h4:contains('Stock move')" },
+        { trigger: '.o_field_x2many_list_row_add > a' },
+        {
+            trigger: ".o_field_widget[name=lot_name] input",
+            run: 'text two',
+        },
+        { trigger: ".o_form_view.modal-content .o_form_button_save" },
+        { trigger: ".o_form_view:not(.modal-content) .o_form_button_save" },
+        {
+            trigger: ".o_form_renderer.o_form_saved",
+            isCheck: true,
+        },
+    ]
+});
+
+registry.category("web_tour.tours").add('test_edit_existing_line', {
+    test: true,
+    steps: () => [
+        { trigger: ".o_data_cell[name=quantity]" },
+        {
+            trigger: ".o_field_widget[name=quantity] input",
+            run: 'text 2',
+        },
+        { trigger: ".fa-list" },
+        { trigger: "h4:contains('Stock move')" },
+        { trigger: ".o_data_cell[name=quantity]:eq(1)" },
+        {
+            trigger: ".o_field_widget[name=lot_name] input",
+            run: 'text two',
+        },
+        { trigger: ".o_form_view.modal-content .o_form_button_save" },
+        { trigger: ".o_form_view:not(.modal-content) .o_form_button_save" },
+        {
+            trigger: ".o_form_renderer.o_form_saved",
+            isCheck: true,
+        },
+    ]
+});
+
+registry.category("web_tour.tours").add('test_onchange_twice_lot_ids', {
+    test: true,
+    steps: () => [
+        { trigger: ".o_optional_columns_dropdown_toggle" },
+        { trigger: ".dropdown-item:contains('Serial Numbers')"},
+        { trigger: ".o_data_cell.o_many2many_tags_cell"},
+        { trigger: ".oi-close:first"},
+        { trigger: ".oi-close:first"},
+        { trigger: ".o_form_button_save"},
+        {
+            trigger: ".o_form_renderer.o_form_saved",
+            isCheck: true,
+        },
+    ]
+});
+
+return __exports;
+});
+;
+
+/**************************************************************
+*  Filepath: /stock/static/tests/tours/stock_report_tests.js  *
+*  Lines: 28                                                  *
+**************************************************************/
+odoo.define('@stock/../tests/tours/stock_report_tests', ['@web/core/registry'], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module **/
+    
+    const { registry } = require("@web/core/registry");
+
+    registry.category("web_tour.tours").add('test_stock_route_diagram_report', {
+        test: true,
+        steps: () => [
+    {
+        trigger: '.o_kanban_record',
+        extra_trigger: '.o_breadcrumb',
+    },
+    {
+        trigger: '.nav-item > a:contains("Inventory")',
+    },
+    {
+        trigger: '.btn[id="stock.view_diagram_button"]',
+    },
+    {
+        trigger: 'iframe .o_report_stock_rule',
+        isCheck: true,
+    },
+    ]});
+
+return __exports;
+});
+;
+
+/*****************************************************************
+*  Filepath: /project/static/tests/tours/personal_stage_tour.js  *
+*  Lines: 86                                                     *
+*****************************************************************/
+odoo.define('@project/../tests/tours/personal_stage_tour', ['@web/core/registry', '@web_tour/tour_service/tour_utils'], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module */
+
+const { registry } = require("@web/core/registry");
+const { stepUtils } = require("@web_tour/tour_service/tour_utils");
+
+registry.category("web_tour.tours").add('personal_stage_tour', {
+    test: true,
+    url: '/web',
+    steps: () => [stepUtils.showAppsMenuItem(), {
+    trigger: '.o_app[data-menu-xmlid="project.menu_main_pm"]',
+}, {
+    content: "Open Pig Project",
+    trigger: '.o_kanban_record:contains("Pig")',
+}, {
+    // Default is grouped by stage, user should not be able to create/edit a column
+    content: "Check that there is no create column",
+    trigger: "body:not(.o_column_quick_create)",
+    run: function () {},
+}, {
+    content: "Check that there is no create column",
+    trigger: "body:not(.o_column_edit)",
+    run: function () {},
+}, {
+    content: "Check that there is no create column",
+    trigger: "body:not(.o_column_delete)",
+    run: function () {},
+}, {
+    content: "Go to tasks",
+    trigger: 'button[data-menu-xmlid="project.menu_project_management"]',
+},{
+    content: "Go to my tasks", // My tasks is grouped by personal stage by default
+    trigger: 'a[data-menu-xmlid="project.menu_project_management_my_tasks"]',
+}, {
+    content: "Check that we can create a new stage",
+    trigger: '.o_column_quick_create .o_quick_create_folded'
+}, {
+    content: "Create a new personal stage",
+    trigger: 'input.form-control',
+    run: 'text Never',
+}, {
+    content: "Confirm create",
+    trigger: '.o_kanban_add',
+}, {
+    content: "Check that column exists",
+    trigger: '.o_kanban_header:contains("Never")',
+    run: function () {},
+}, {
+    content: 'Open column edit dropdown',
+    trigger: '.o_kanban_header:eq(0)',
+    run: function () {
+        document.querySelector('.o_kanban_config.dropdown .dropdown-toggle').dispatchEvent(new Event('click'));
+    },
+}, {
+    content: "Try editing inbox",
+    trigger: ".dropdown-item.o_column_edit",
+}, {
+    content: "Change title",
+    trigger: 'div.o_field_char[name="name"] input',
+    run: 'text  (Todo)',
+}, {
+    content: "Save changes",
+    trigger: '.btn-primary:contains("Save")',
+}, {
+    content: "Check that column was updated",
+    trigger: '.o_kanban_header:contains("Todo")',
+}, {
+    content: "Create a personal task from the quick create form",
+    trigger: '.o-kanban-button-new',
+}, {
+    content: "Create a new personal task",
+    trigger: 'input.o_input:not(.o_searchview_input)',
+    run: 'text New Test Task',
+}, {
+    content: "Confirm create",
+    trigger: '.o_kanban_add',
+}, {
+    content: "Check that task exists",
+    trigger: '.o_kanban_record_title:contains("New Test Task")',
+    run: function () {},
+}]});
+
+return __exports;
+});
+;
+
+/*************************************************************************
+*  Filepath: /project/static/tests/tours/project_burndown_chart_tour.js  *
+*  Lines: 83                                                             *
+*************************************************************************/
+odoo.define('@project/../tests/tours/project_burndown_chart_tour', ['@web/core/registry', '@web_tour/tour_service/tour_utils'], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module */
+
+const { registry } = require("@web/core/registry");
+const { stepUtils } = require("@web_tour/tour_service/tour_utils");
+
+registry.category("web_tour.tours").add('burndown_chart_tour', {
+    test: true,
+    url: '/web',
+    steps: () => [stepUtils.showAppsMenuItem(), {
+    trigger: '.o_app[data-menu-xmlid="project.menu_main_pm"]',
+}, {
+    content: 'Open "Burndown Chart Test" project menu',
+    trigger: '.o_kanban_record:contains("Burndown Chart Test") .o_dropdown_kanban .dropdown-toggle',
+}, {
+    content: `Open "Burndown Chart Test" project's "Burndown Chart" view`,
+    trigger: '.o_kanban_record:contains("Burndown Chart Test") .o_kanban_manage_reporting div[role="menuitem"] a:contains("Burndown Chart")',
+}, {
+    content: 'The sort buttons are not rendered',
+    trigger: '.o_graph_renderer:not(:has(.btn-group[role=toolbar][aria-label="Sort graph"]))',
+    extra_trigger: '.o_graph_renderer',
+}, {
+    content: 'Remove the project search "Burndown Chart Test"',
+    trigger: '.o_searchview_facet:contains("Burndown Chart Test") .o_facet_remove',
+}, {
+    content: 'Search Burndown Chart',
+    trigger: 'input.o_searchview_input',
+    run: `text Burndown`,
+}, {
+    content: 'Validate search',
+    trigger: '.o_searchview_autocomplete .o_menu_item:contains("Project")',
+}, {
+    content: 'Remove the group by "Date: Month > Stage"',
+    trigger: '.o_searchview_facet:contains("Date: Month") .o_facet_remove',
+}, {
+    content: 'A "The Burndown Chart must be grouped by Date and Stage" notification is shown when trying to remove the group by "Date: Month > Stage"',
+    trigger: '.o_notification_manager .o_notification:contains("The Burndown Chart must be grouped by Date and Stage") button.o_notification_close',
+}, {
+    content: 'Open the search panel menu',
+    trigger: '.o_control_panel .o_searchview_dropdown_toggler',
+}, {
+    content: 'The Stage group menu item is invisible',
+    trigger: '.o_group_by_menu:not(:has(.o_menu_item:contains("Stage")))',
+}, {
+    content: 'Open the Date group by sub menu',
+    trigger: '.o_group_by_menu button.o_menu_item:contains("Date")',
+}, {
+    content: 'Click on the selected Date sub menu',
+    trigger: '.o_group_by_menu button.o_menu_item:contains("Date") + * .dropdown-item.selected',
+    run: function () {
+        this.$anchor[0].dispatchEvent(new Event('click'));
+    },
+}, {
+    content: 'A "The Burndown Chart must be grouped by Date" notification is shown when trying to remove the group by "Date: Month > Stage"',
+    trigger: '.o_notification_manager .o_notification:contains("The Burndown Chart must be grouped by Date") button.o_notification_close',
+}, {
+    content: 'Open the search panel menu',
+    trigger: '.o_control_panel .o_searchview_dropdown_toggler',
+}, {
+    content: 'Open the Date filter sub menu',
+    trigger: '.o_filter_menu button.o_menu_item:contains("Date")',
+}, {
+    content: 'Click on the first Date filter sub menu',
+    trigger: '.o_filter_menu .o_menu_item:contains("Date") + * .dropdown-item:first-child',
+    run: function () {
+        this.$anchor[0].dispatchEvent(new Event('click'));
+    },
+}, {
+    content: 'Close the Date filter menu',
+    trigger: '.o_graph_renderer',
+}, {
+    content: 'Open the search panel menu',
+    trigger: '.o_control_panel .o_searchview_dropdown_toggler',
+}, {
+    content: 'The comparison menu is not rendered',
+    trigger: ':not(:has(.o_comparison_menu))',
+    isCheck: true,
+}]});
+
+return __exports;
+});
+;
+
+/******************************************************************
+*  Filepath: /project/static/tests/tours/project_sharing_tour.js  *
+*  Lines: 162                                                     *
+******************************************************************/
+odoo.define('@project/../tests/tours/project_sharing_tour', ['@web/core/registry', '@web_tour/tour_service/tour_utils'], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module **/
+
+const { registry } = require("@web/core/registry");
+const { stepUtils } = require("@web_tour/tour_service/tour_utils");
+
+const projectSharingSteps = [...stepUtils.goToAppSteps("project.menu_main_pm", 'Go to the Project App.'), {
+    trigger: '.o_kanban_record:contains("Project Sharing") .o_dropdown_kanban .dropdown-toggle',
+    content: 'Open the project dropdown.'
+}, {
+    trigger: '.o_kanban_record:contains("Project Sharing") .dropdown-menu a:contains("Share")',
+    content: 'Start editing the project.',
+}, {
+    trigger: 'div.o_field_radio[name="access_mode"] div.o_radio_item > input[data-value="edit"]',
+    content: 'Select "Edit" as Access mode in the "Share Project" wizard.',
+}, {
+    trigger: '.o_field_many2many_tags_email[name=partner_ids] input',
+    extra_trigger: 'label[for=partner_ids_0]:contains("Invite People")',
+    content: 'Select the user portal as collaborator to the "Project Sharing" project.',
+    run: 'text Georges',
+}, {
+    trigger: '.ui-autocomplete a.dropdown-item:contains("Georges")',
+    in_modal: false,
+}, {
+    trigger: 'footer > button[name="action_share_record"]',
+    content: 'Confirm the project sharing with this portal user.',
+}, {
+    trigger: '.o_web_client',
+    content: 'Go to project portal view to select the "Project Sharing" project',
+    run: function () {
+        window.location.href = window.location.origin + '/my/projects';
+    },
+}, {
+    id: 'project_sharing_feature',
+    trigger: 'table > tbody > tr a:has(span:contains(Project Sharing))',
+    content: 'Select "Project Sharing" project to go to project sharing feature for this project.',
+}, {
+    trigger: 'iframe .o_project_sharing',
+    content: 'Wait the project sharing feature be loaded',
+    run: function () {},
+}, {
+    trigger: 'iframe button.o-kanban-button-new',
+    content: 'Click "Create" button',
+    run: 'click',
+}, {
+    trigger: 'iframe .o_kanban_quick_create .o_field_widget[name="name"] input',
+    content: 'Create Task',
+    run: 'text Test Create Task',
+}, {
+    trigger: 'iframe .o_kanban_quick_create .o_kanban_edit',
+    content: 'Go to the form view of this new task',
+}, {
+    trigger: 'iframe div[name="stage_id"] div.o_statusbar_status button[aria-checked="false"]:contains(Done)',
+    content: 'Change the stage of the task.',
+}, {
+    trigger: 'iframe .o_portal_chatter_composer_input .o_portal_chatter_composer_body textarea',
+    content: 'Write a message in the chatter of the task',
+    run: 'text I create a new task for testing purpose.',
+}, {
+    trigger: 'iframe .o_portal_chatter_composer_input .o_portal_chatter_composer_body button[name="send_message"]',
+    content: 'Send the message',
+}, {
+    trigger: 'iframe ol.breadcrumb > li.o_back_button > a:contains(Project Sharing)',
+    content: 'Go back to the kanban view',
+}, {
+    trigger: 'iframe .o_searchview_dropdown_toggler',
+    content: 'open the search panel menu',
+}, {
+    trigger: 'iframe .o_filter_menu .dropdown-item:first-child',
+    content: 'click on the first item in the filter menu',
+}, {
+    trigger: 'iframe .o_group_by_menu .dropdown-item:first-child',
+    content: 'click on the first item in the group by menu',
+}, {
+    trigger: 'iframe .o_favorite_menu .o_add_favorite',
+    content: 'open accordion "save current search" in favorite menu',
+}, {
+    trigger: 'iframe .o_favorite_menu .o_accordion_values .o_save_favorite',
+    content: 'click to "save" button in favorite menu',
+}, {
+    trigger: 'iframe .o_filter_menu .dropdown-item:first-child',
+    content: 'click on the first item in the filter menu',
+}, {
+    trigger: 'iframe .o_group_by_menu .dropdown-item:first-child',
+    content: 'click on the first item in the group by menu',
+}, {
+    trigger: 'iframe .o_favorite_menu .o_accordion_values .o_save_favorite',
+    content: 'click to "save" button in favorite menu',
+}, {
+    trigger: 'iframe button.o_switch_view.o_list',
+    content: 'Go to the list view',
+}, {
+    extra_trigger: 'iframe .o_list_view',
+    trigger: 'iframe .o_optional_columns_dropdown_toggle',
+}, {
+    trigger: 'iframe .o_optional_columns_dropdown .dropdown-item:contains("Milestone")',
+    isCheck: true,
+}, {
+    trigger: 'iframe .o_list_view',
+    content: 'Check the list view',
+    isCheck: true,
+}];
+
+registry.category("web_tour.tours").add('project_sharing_tour', {
+    test: true,
+    url: '/web',
+    steps: () => {
+        return projectSharingSteps;
+    } 
+});
+
+registry.category("web_tour.tours").add("portal_project_sharing_tour", {
+    test: true,
+    url: "/my/projects",
+    steps: () => {
+        // The begining of the project sharing feature
+        const projectSharingStepIndex = projectSharingSteps.findIndex(s => s?.id === 'project_sharing_feature');
+        return projectSharingSteps.slice(projectSharingStepIndex, projectSharingSteps.length);
+    }
+});
+
+registry.category("web_tour.tours").add("portal_project_sharing_tour_with_disallowed_milestones", {
+    test: true,
+    url: "/my/projects",
+    steps: () => [
+        {
+            id: 'project_sharing_feature',
+            trigger: 'table > tbody > tr a:has(span:contains(Project Sharing))',
+            content: 'Select "Project Sharing" project to go to project sharing feature for this project.',
+        },
+        {
+            trigger: 'iframe .o_project_sharing',
+            content: 'Wait the project sharing feature be loaded',
+            isCheck: true,
+        },
+        {
+            trigger: 'iframe button.o_switch_view.o_list',
+            content: 'Go to the list view',
+        },
+        {
+            extra_trigger: 'iframe .o_list_view',
+            trigger: 'iframe .o_optional_columns_dropdown_toggle',
+        },
+        {
+            extra_trigger: 'iframe .o_optional_columns_dropdown .dropdown-item',
+            trigger: 'iframe .o_optional_columns_dropdown',
+            run: function() {
+                const optionalFields = Array.from(this.$anchor[0].ownerDocument.querySelectorAll(".dropdown-item"))
+                    .map(e => e.textContent);
+
+                if (optionalFields.includes("Milestone")) {
+                    throw new Error("the Milestone field should be absent as allow_milestones is set to False");
+                }
+            }
+        },
+    ]
+});
+
+return __exports;
+});
+;
+
+/****************************************************************************
+*  Filepath: /project/static/tests/tours/project_tags_filter_tour_tests.js  *
+*  Lines: 54                                                                *
+****************************************************************************/
+odoo.define('@project/../tests/tours/project_tags_filter_tour_tests', ['@web/core/registry', '@web_tour/tour_service/tour_utils'], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module **/
+
+const { registry } = require("@web/core/registry");
+const { stepUtils } = require("@web_tour/tour_service/tour_utils");
+
+function changeFilter(filterName) {
+    return [
+        {
+            trigger: '.o_control_panel_actions .o_searchview_dropdown_toggler',
+            content: 'open searchview menu',
+        },
+        {
+            trigger: `.o_favorite_menu .dropdown-item span:contains("${filterName}")`,
+        },
+        {
+            trigger: '.o_control_panel_actions .o_searchview_dropdown_toggler',
+            content: 'close searchview menu',
+        },
+    ];
+}
+
+registry.category("web_tour.tours").add('project_tags_filter_tour',
+    {
+        test: true,
+        url: '/web',
+        steps: () => [stepUtils.showAppsMenuItem(),{
+    trigger: '.o_app[data-menu-xmlid="project.menu_main_pm"]',
+},
+...changeFilter("Corkscrew tail tag filter"),
+{
+    trigger: '.o_kanban_group:has(.o_kanban_header:has(span:contains("pig"))) .o_kanban_record:has(span:contains("Pigs"))',
+    extra_trigger: '.o_kanban_group:has(.o_kanban_header:has(span:contains("goat"))):not(:has(.o_kanban_record))',
+    content: 'check that the corkscrew tail filter has taken effect',
+    run: () => {},
+}, ...changeFilter("horned tag filter"),
+{
+    trigger: '.o_kanban_group:has(.o_kanban_header:has(span:contains("goat"))) .o_kanban_record:has(span:contains("Goats"))',
+    extra_trigger: '.o_kanban_group:has(.o_kanban_header:has(span:contains("pig"))):not(:has(.o_kanban_record))',
+    content: 'check that the horned filter has taken effect',
+    run: () => {},
+}, ...changeFilter("4 Legged tag filter"),
+{
+    trigger: '.o_kanban_group:has(.o_kanban_header:has(span:contains("goat"))) .o_kanban_record:has(span:contains("Goats"))',
+    extra_trigger: '.o_kanban_group:has(.o_kanban_header:has(span:contains("pig"))) .o_kanban_record:has(span:contains("Pigs"))',
+    content: 'check that the 4 legged filter has taken effect',
+    run: () => {},
+},
+]});
+
+return __exports;
+});
+;
+
+/**********************************************************
+*  Filepath: /project/static/tests/tours/project_tour.js  *
+*  Lines: 87                                              *
+**********************************************************/
+odoo.define('@project/../tests/tours/project_tour', ['@web/core/registry', '@web_tour/tour_service/tour_utils'], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module */
+
+const { registry } = require("@web/core/registry");
+const { stepUtils } = require("@web_tour/tour_service/tour_utils");
+
+registry.category("web_tour.tours").add('project_test_tour', {
+    test: true,
+    url: '/web',
+    steps: () => [
+    stepUtils.showAppsMenuItem(), {
+        trigger: '.o_app[data-menu-xmlid="project.menu_main_pm"]',
+    }, {
+        trigger: '.o-kanban-button-new',
+        extra_trigger: '.o_project_kanban',
+        width: 200,
+    }, {
+        trigger: '.o_project_name input',
+        run: 'text New Project',
+        id: 'project_creation',
+    }, {
+        trigger: '.o_open_tasks',
+        run: function (actions) {
+            actions.auto('.modal:visible .btn.btn-primary');
+        },
+    }, {
+        trigger: ".o_kanban_project_tasks .o_column_quick_create .input-group",
+        run: function (actions) {
+            actions.text("New", this.$anchor.find("input"));
+        },
+    }, {
+        trigger: ".o_kanban_project_tasks .o_column_quick_create .o_kanban_add",
+        auto: true,
+    }, {
+        trigger: ".o_kanban_project_tasks .o_column_quick_create .input-group",
+        extra_trigger: '.o_kanban_group',
+        run: function (actions) {
+            actions.text("Done", this.$anchor.find("input"));
+        },
+    }, {
+        trigger: ".o_kanban_project_tasks .o_column_quick_create .o_kanban_add",
+        auto: true,
+    }, {
+        trigger: '.o-kanban-button-new',
+        extra_trigger: '.o_kanban_group:eq(0)'
+    }, {
+        trigger: '.o_kanban_quick_create div.o_field_char[name=display_name] input',
+        extra_trigger: '.o_kanban_project_tasks',
+        run: 'text New task'
+    }, {
+        trigger: '.o_kanban_quick_create .o_kanban_add',
+        extra_trigger: '.o_kanban_project_tasks',
+        id: "quick_create_tasks",
+    }, {
+        trigger: '.o_field_text[name="name"] textarea',
+        content: 'Set task name',
+        run: 'text New task',
+    }, {
+        trigger: 'div[name="user_ids"].o_field_many2many_tags_avatar input',
+        content: 'Assign the task to you',
+        run: 'click',
+    }, {
+        trigger: 'ul.ui-autocomplete a .o_avatar_many2x_autocomplete',
+        content: 'Assign the task to you',
+    }, {
+        trigger: 'a[name="sub_tasks_page"]',
+        content: 'Open sub-tasks notebook section',
+        run: 'click',
+    }, {
+        trigger: '.o_field_subtasks_one2many .o_list_renderer a[role="button"]',
+        content: 'Add a subtask',
+        run: 'click',
+    }, {
+        trigger: '.o_field_subtasks_one2many div[name="name"] input',
+        content: 'Set subtask name',
+        run: 'text new subtask'
+    }, {
+        trigger: 'button[special="save"]',
+        extra_trigger: '.o_field_many2many_tags_avatar .o_m2m_avatar',
+        content: 'Save task',
+    },
+]});
+
+return __exports;
+});
+;
+
+/***********************************************************************
+*  Filepath: /project/static/tests/tours/project_update_tour_tests.js  *
+*  Lines: 189                                                          *
+***********************************************************************/
+odoo.define('@project/../tests/tours/project_update_tour_tests', ['@web/core/registry', '@web_tour/tour_service/tour_utils'], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module **/
+
+const { registry } = require("@web/core/registry");
+const { stepUtils } = require("@web_tour/tour_service/tour_utils");
+
+function openProjectUpdateAndReturnToTasks(view, viewClass) {
+    return [{
+            trigger: '.o_project_updates_breadcrumb',
+            content: 'Open Project Update from view : ' + view,
+            extra_trigger: `.${viewClass}`,
+        }, {
+            trigger: ".o-kanban-button-new",
+            content: "Create a new update from project task view : " + view,
+            extra_trigger: '.o_project_update_kanban_view',
+        }, {
+            trigger: "button.o_form_button_cancel",
+            content: "Discard project update from project task view : " + view,
+        }, {
+            trigger: ".o_switch_view.o_list",
+            content: "Go to list of project update from view " + view,
+        }, {
+            trigger: '.o_back_button',
+            content: 'Go back to the task view : ' + view,
+            // extra_trigger: '.o_list_view', // FIXME: [XBO] uncomment it when the sample data will be displayed after discarding the creation of a project update record.
+        }, {
+            trigger: `.${viewClass}`,
+            content: 'Check the task view : ' + view,
+            isCheck: true,
+        }
+    ];
+}
+
+registry.category("web_tour.tours").add('project_update_tour', {
+    test: true,
+    url: '/web',
+    steps: () => [stepUtils.showAppsMenuItem(), {
+    trigger: '.o_app[data-menu-xmlid="project.menu_main_pm"]',
+}, {
+    trigger: '.o-kanban-button-new',
+    extra_trigger: '.o_project_kanban',
+    width: 200,
+}, {
+    trigger: '.o_project_name input',
+    run: 'text New Project'
+}, {
+    trigger: '.o_open_tasks',
+    run: function (actions) {
+        actions.auto('.modal:visible .btn.btn-primary');
+    },
+}, {
+    trigger: ".o_kanban_project_tasks .o_column_quick_create .input-group",
+    run: function (actions) {
+        actions.text("New", this.$anchor.find("input"));
+    },
+}, {
+    trigger: ".o_kanban_project_tasks .o_column_quick_create .o_kanban_add",
+    auto: true,
+}, {
+    trigger: ".o_kanban_project_tasks .o_column_quick_create .input-group",
+    extra_trigger: '.o_kanban_group',
+    run: function (actions) {
+        actions.text("Done", this.$anchor.find("input"));
+    },
+}, {
+    trigger: ".o_kanban_project_tasks .o_column_quick_create .o_kanban_add",
+    auto: true,
+}, {
+    trigger: '.o-kanban-button-new',
+    extra_trigger: '.o_kanban_group:eq(0)'
+}, {
+    trigger: '.o_kanban_quick_create div.o_field_char[name=display_name] input',
+    extra_trigger: '.o_kanban_project_tasks',
+    run: 'text New task'
+}, {
+    trigger: '.o_kanban_quick_create .o_kanban_add',
+    extra_trigger: '.o_kanban_project_tasks'
+}, {
+    trigger: '.o-kanban-button-new',
+    extra_trigger: '.o_kanban_group:eq(0)'
+}, {
+    trigger: '.o_kanban_quick_create div.o_field_char[name=display_name] input',
+    extra_trigger: '.o_kanban_project_tasks',
+    run: 'text Second task'
+}, {
+    trigger: '.o_kanban_quick_create .o_kanban_add',
+    extra_trigger: '.o_kanban_project_tasks'
+}, {
+    trigger: '.o_kanban_group:nth-child(2) .o_kanban_header',
+    run: function () {
+        document.querySelector('.o_kanban_group:nth-child(2) .o_kanban_config.dropdown .dropdown-toggle').dispatchEvent(new Event('click'));
+    }
+}, {
+    trigger: ".dropdown-item.o_column_edit",
+}, {
+    trigger: ".o_field_widget[name=fold] input",
+}, {
+    trigger: ".modal-footer button",
+}, {
+    trigger: ".o_kanban_record .oe_kanban_content",
+    extra_trigger: '.o_kanban_project_tasks',
+    run: "drag_and_drop .o_kanban_group:eq(1) ",
+}, {
+    trigger: ".o_project_updates_breadcrumb",
+    content: 'Open Updates'
+}, {
+    trigger: ".o_add_milestone a",
+    content: "Add a first milestone"
+}, {
+    trigger: "div.o_field_widget[name=name] input",
+    run: 'text New milestone'
+}, {
+    trigger: "input[data-field=deadline]",
+    run: 'text 12/12/2099'
+}, {
+    trigger: ".modal-footer .o_form_button_save"
+}, {
+    trigger: ".o_add_milestone a",
+}, {
+    trigger: "div.o_field_widget[name=name] input",
+    run: 'text Second milestone'
+}, {
+    trigger: "input[data-field=deadline]",
+    run: 'text 12/12/2022'
+}, {
+    trigger: ".modal-footer .o_form_button_save"
+}, {
+    trigger: ".o_rightpanel_milestone:eq(1) .o_milestone_detail",
+}, {
+    trigger: "input[data-field=deadline]",
+    run: 'text 12/12/2100'
+}, {
+    trigger: ".modal-footer .o_form_button_save"
+}, {
+    trigger: ".o-kanban-button-new",
+    content: "Create a new update"
+}, {
+    trigger: "div.o_field_widget[name=name] input",
+    run: 'text New update'
+}, {
+    trigger: ".o_form_button_save"
+}, {
+    trigger: ".o_field_widget[name='description'] h1:contains('Activities')",
+    run: function () {},
+}, {
+    trigger: ".o_field_widget[name='description'] h3:contains('Milestones')",
+    run: function () {},
+}, {
+    trigger: ".o_field_widget[name='description'] div[name='milestone'] ul li:contains('(12/12/2099 => 12/12/2100)')",
+    run: function () {},
+}, {
+    trigger: ".o_field_widget[name='description'] div[name='milestone'] ul li:contains('(due 12/12/2022)')",
+    run: function () {},
+}, {
+    trigger: ".o_field_widget[name='description'] div[name='milestone'] ul li:contains('(due 12/12/2100)')",
+    run: function () {},
+}, {
+    trigger: '.o_back_button',
+    content: 'Go back to the kanban view the project',
+}, {
+    trigger: '.o_switch_view.o_list',
+    content: 'Open List View of Project Updates',
+}, {
+    trigger: '.o_back_button',
+    content: 'Go back to the kanban view the project',
+    extra_trigger: '.o_list_view',
+}, {
+    trigger: '.o_switch_view.o_graph',
+    content: 'Open Graph View of Tasks',
+}, ...openProjectUpdateAndReturnToTasks("Graph", "o_graph_view"), {
+    trigger: '.o_switch_view.o_list',
+    content: 'Open List View of Tasks',
+    extra_trigger: '.o_graph_view',
+}, ...openProjectUpdateAndReturnToTasks("List", "o_list_view"), {
+    trigger: '.o_switch_view.o_pivot',
+    content: 'Open Pivot View of Tasks',
+}, ...openProjectUpdateAndReturnToTasks("Pivot", "o_pivot_view"), {
+    trigger: '.o_switch_view.o_calendar',
+    content: 'Open Calendar View of Tasks',
+}, ...openProjectUpdateAndReturnToTasks("Calendar", "o_calendar_view"), {
+    trigger: '.o_switch_view.o_activity',
+    content: 'Open Activity View of Tasks',
+}, ...openProjectUpdateAndReturnToTasks("Activity", "o_activity_view"),
+]});
+
+return __exports;
+});
+;
+
+/*********************************************************
+*  Filepath: /hr/static/tests/tours/hr_employee_flow.js  *
+*  Lines: 36                                             *
+*********************************************************/
+odoo.define('@hr/../tests/tours/hr_employee_flow', ['@web/core/registry', '@web_tour/tour_service/tour_utils'], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module **/
+
+const { registry } = require("@web/core/registry");
+const { stepUtils } = require("@web_tour/tour_service/tour_utils");
+
+registry.category("web_tour.tours").add('hr_employee_tour', {
+    test: true,
+    url: '/web',
+    steps: () => [
+    stepUtils.showAppsMenuItem(),
+    {
+        content: "Open Employees app",
+        trigger: ".o_app[data-menu-xmlid='hr.menu_hr_root']",
+        run: 'click',
+    },
+    {
+        content: "Open an Employee Profile",
+        trigger: ".o_kanban_record_title:contains('Johnny H.')",
+        run: 'click',
+    },
+    {
+        content: "Open user account menu",
+        trigger: ".o_user_menu .dropdown-toggle",
+        run: 'click',
+    }, {
+        content: "Open My Profile",
+        trigger: "[data-menu=settings]",
+        run: 'click',
+    },
+]});
+
+return __exports;
+});
+;
+
+/*********************************************************************
+*  Filepath: /hr/static/tests/tours/user_modify_own_profile_tour.js  *
+*  Lines: 37                                                         *
+*********************************************************************/
+odoo.define('@hr/../tests/tours/user_modify_own_profile_tour', ['@web_tour/tour_service/tour_utils', '@web/core/registry', '@web/core/utils/patch'], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module **/
+
+const { stepUtils } = require("@web_tour/tour_service/tour_utils");
+const { registry } = require("@web/core/registry");
+const { patch } = require("@web/core/utils/patch");
+
+/**
+ * As 'hr' changes the flow a bit and displays the user preferences form in a full view instead of
+ * a modal, we adapt the steps of the original tour accordingly.
+ */
+patch(registry.category("web_tour.tours").get("mail/static/tests/tours/user_modify_own_profile_tour.js"), {
+    steps() {
+        return [
+            {
+                content: 'Open user account menu',
+                trigger: '.o_user_menu button',
+            }, 
+            {
+                content: "Open preferences / profile screen",
+                trigger: '[data-menu=settings]',
+            }, 
+            {
+                content: "Update the email address",
+                trigger: 'div[name="email"] input',
+                run: 'text updatedemail@example.com',
+            }, 
+            ...stepUtils.saveForm(),
+        ];
+    }
+});
+
+
+return __exports;
+});
+;
+
+/***********************************************************
+*  Filepath: /hr_skills/static/tests/tours/skills_tour.js  *
+*  Lines: 156                                              *
+***********************************************************/
+odoo.define('@hr_skills/../tests/tours/skills_tour', ['@web/core/registry', '@web_tour/tour_service/tour_utils'], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module **/
+
+const { registry } = require("@web/core/registry");
+const { stepUtils } = require("@web_tour/tour_service/tour_utils");
+
+registry.category("web_tour.tours").add('hr_skills_tour', {
+    test: true,
+    url: '/web',
+    steps: () => [
+    stepUtils.showAppsMenuItem(),
+    {
+        content: "Open Employees app",
+        trigger: ".o_app[data-menu-xmlid='hr.menu_hr_root']",
+    },
+    {
+        content: "Create a new employee",
+        trigger: ".o-kanban-button-new",
+    },
+    {
+        content: "Pick a name",
+        trigger: ".o_field_widget[name='name'] input",
+        run: "text Jony McHallyFace",
+    },
+    {
+        content: "Save",
+        trigger: ".o_form_button_save",
+    },
+    {
+        content: "Add a new Resume experience",
+        trigger: ".o_field_resume_one2many tr.o_resume_group_header button.btn-secondary",
+    },
+    {
+        content: "Enter some company name",
+        trigger: ".modal-body .o_field_widget[name='name'] input",
+        run: "text Mamie Rock",
+    },
+    {
+        content: "Set start date",
+        trigger: ".o_field_widget[name='date_start'] input",
+        run: "text 12/05/2017",
+    },
+    {
+        content: "Give some description",
+        trigger: ".o_field_widget[name='description'] textarea",
+        run: "text Sang some songs and played some music",
+    },
+    {
+        content: "Save it",
+        trigger: ".o_form_button_save",
+        in_modal: true,
+        run: "click",
+    },
+    {
+        content: "Edit newly created experience",
+        trigger: ".o_resume_line_title:contains('Mamie Rock')",
+        run: "click",
+    },
+    {
+        content: "Change type",
+        trigger: ".o_field_widget[name='line_type_id'] input",
+        run: "text Experience",
+    },
+    {
+        content: "Choose experience",
+        trigger: '.ui-autocomplete .ui-menu-item a:contains("Experience")',
+        run: "click",
+    },
+    {
+        content: "Save experience change",
+        trigger: ".o_form_button_save",
+        in_modal: true,
+        run: "click",
+    },
+    {
+        content: "Add a new Skill",
+        trigger: ".o_field_skills_one2many button:contains('Pick a skill from the list')",
+    },
+    {
+        content: "Select Music",
+        trigger: ".o_field_widget[name='skill_type_id'] label:contains('Best Music')",
+        run: "click",
+    },
+    {
+        content: "Select a song",
+        trigger: ".o_field_widget[name='skill_id'] input",
+        run: "text Fortun",
+    },
+    {
+        content: "Choose the song",
+        trigger: '.ui-autocomplete .ui-menu-item a:contains("Fortunate Son")',
+        run: "click",
+    },
+    {
+        content: "Select a level",
+        trigger: ".o_field_widget[name='skill_level_id'] input",
+        run: "text Level",
+    },
+    {
+        content: "Choose the level",
+        trigger: '.ui-autocomplete .ui-menu-item a:contains("Level 2")',
+        run: "click",
+    },
+    {
+        content: "Save new skill",
+        trigger: ".o_form_button_save",
+        in_modal: true,
+        run: "click",
+    },
+    {
+        content: "Check if item is added",
+        trigger: ".o_data_row td.o_data_cell:contains('Fortunate Son')",
+        run: () => {},
+    },
+    {
+        content: "Add a new Skill",
+        trigger: ".o_field_skills_one2many button:contains('ADD')",
+    },
+    {
+        content: "Select a song", // "Music" should be already selected
+        trigger: ".o_field_widget[name='skill_id'] input",
+        run: "text Mary",
+    },
+    {
+        content: "Choose the song",
+        trigger: '.ui-autocomplete .ui-menu-item a:contains("Oh Mary")',
+        run: "click",
+    },
+    {
+        content: "Select a level",
+        trigger: ".o_field_widget[name='skill_level_id'] input",
+        run: "text Level 7",
+    },
+    {
+        content: "Choose the level",
+        trigger: '.ui-autocomplete .ui-menu-item a:contains("Level 7")',
+        run: "click",
+    },
+    {
+        content: "Save new skill",
+        trigger: ".o_form_button_save",
+        in_modal: true,
+        run: "click",
+    },
+    {
+        content: "Check if item is added",
+        trigger: ".o_data_row td.o_data_cell:contains('Oh Mary')",
+        run: () => {},
+    },
+    ...stepUtils.saveForm(),
+]});
+
+return __exports;
+});
+;
+
+/***************************************************
+*  Filepath: /auth_totp/static/tests/totp_flow.js  *
+*  Lines: 344                                      *
+***************************************************/
+odoo.define('@auth_totp/../tests/totp_flow', ['@web/core/network/rpc_service', '@web/core/registry', '@web_tour/tour_service/tour_utils'], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module **/
+
+const { jsonrpc } = require("@web/core/network/rpc_service");
+const { registry } = require("@web/core/registry");
+const { stepUtils } = require("@web_tour/tour_service/tour_utils");
+
+function openRoot() {
+    return [{
+        content: "return to client root to avoid race condition",
+        trigger: 'body',
+        run() {
+            $('body').addClass('wait');
+            window.location = '/web';
+        }
+    }, {
+        content: "wait for client reload",
+        trigger: 'body:not(.wait)',
+        run() {}
+    }];
+}
+function openUserProfileAtSecurityTab() {
+    return [{
+        content: 'Open user account menu',
+        trigger: '.o_user_menu .dropdown-toggle',
+        run: 'click',
+    }, {
+        content: "Open preferences / profile screen",
+        trigger: '[data-menu=settings]',
+        run: 'click',
+    }, {
+        content: "Switch to security tab",
+        trigger: 'a[role=tab]:contains("Account Security")',
+        run: 'click',
+    }];
+}
+
+/**
+ * Checks that the TOTP button is in the specified state (true = enabled =
+ * can disable, false = disabled = can enable), then closes the profile dialog
+ * if it's one (= hr not installed).
+ *
+ * If no totp state is provided, just checks that the toggle exists.
+ */
+function closeProfileDialog({content, totp_state}) {
+    let trigger;
+    switch (totp_state) {
+    case true: trigger = 'button[name=action_totp_disable]'; break;
+    case false: trigger = 'button[name=action_totp_enable_wizard]'; break;
+    case undefined: trigger = 'button.o_auth_2fa_btn'; break;
+    default: throw new Error(`Invalid totp state ${totp_state}`)
+    }
+
+    return [{
+        content,
+        trigger,
+        run() {
+            const $modal = this.$anchor.parents('.o_dialog');
+            if ($modal.length) {
+                $modal.find('button[name=preference_cancel]').click()
+            }
+        }
+    }, {
+        trigger: 'body',
+        async run() {
+            while (document.querySelector('.o_dialog')) {
+                await Promise.resolve();
+            }
+            this.$anchor.addClass('dialog-closed');
+        },
+    }, {
+        trigger: 'body.dialog-closed',
+        run() {},
+    }];
+}
+
+registry.category("web_tour.tours").add('totp_tour_setup', {
+    test: true,
+    url: '/web',
+    steps: () => [...openUserProfileAtSecurityTab(), {
+    content: "Open totp wizard",
+    trigger: 'button[name=action_totp_enable_wizard]',
+}, {
+    content: "Check that we have to enter enhanced security mode and input password",
+    extra_trigger: 'div:contains("enter your password")',
+    trigger: '[name=password] input',
+    run: 'text demo',
+}, {
+    content: "Confirm",
+    trigger: "button:contains(Confirm Password)",
+}, {
+    content: "Check the wizard has opened",
+    trigger: 'li:contains("When requested to do so")',
+    run() {}
+}, {
+    content: "Get secret from collapsed div",
+    trigger: 'a:contains("Cannot scan it?")',
+    async run(helpers) {
+        const $secret = this.$anchor.closest('div').find('[name=secret] span:first-child');
+        const $copyBtn = $secret.find('button');
+        $copyBtn.remove();
+        const token = await jsonrpc('/totphook', {
+            secret: $secret.text()
+        });
+        helpers.text(token, '[name=code] input');
+        helpers.click('button.btn-primary:contains(Activate)');
+        $('body').addClass('got-token')
+    }
+}, {
+    content: 'wait for rpc',
+    trigger: 'body.got-token',
+    run() {}
+},
+...openRoot(),
+...openUserProfileAtSecurityTab(),
+...closeProfileDialog({
+    content: "Check that the button has changed",
+    totp_state: true,
+}),
+]});
+
+registry.category("web_tour.tours").add('totp_login_enabled', {
+    test: true,
+    url: '/',
+    steps: () => [{
+    content: "check that we're on the login page or go to it",
+    trigger: 'input#login, a:contains(Sign in)'
+}, {
+    content: "input login",
+    trigger: 'input#login',
+    run: 'text demo',
+}, {
+    content: 'input password',
+    trigger: 'input#password',
+    run: 'text demo',
+}, {
+    content: "click da button",
+    trigger: 'button:contains("Log in")',
+}, {
+    content: "expect totp screen",
+    trigger: 'label:contains(Authentication Code)',
+}, {
+    content: "input code",
+    trigger: 'input[name=totp_token]',
+    async run(helpers) {
+        // TODO: if tours are ever async-aware the click should get moved out,
+        //       but currently there's no great way to make the tour wait until
+        //       we've retrieved and set the token: `:empty()` is aboutthe text
+        //       content of the HTML element, not the JS value property. We
+        //       could set a class but that's really no better than
+        //       procedurally clicking the button after we've set the input.
+        const token = await jsonrpc('/totphook');
+        helpers.text(token);
+        helpers.click('button:contains("Log in")');
+    }
+}, {
+    content: "check we're logged in",
+    trigger: ".o_user_menu .dropdown-toggle",
+    run() {}
+}]});
+
+registry.category("web_tour.tours").add('totp_login_device', {
+    test: true,
+    url: '/',
+    steps: () => [{
+    content: "check that we're on the login page or go to it",
+    trigger: 'input#login, a:contains(Sign in)'
+}, {
+    content: "input login",
+    trigger: 'input#login',
+    run: 'text demo',
+}, {
+    content: 'input password',
+    trigger: 'input#password',
+    run: 'text demo',
+}, {
+    content: "click da button",
+    trigger: 'button:contains("Log in")',
+}, {
+    content: "expect totp screen",
+    trigger: 'label:contains(Authentication Code)',
+}, {
+    content: "check remember device box",
+    trigger: 'label[for=switch-remember]',
+}, {
+    content: "input code",
+    trigger: 'input[name=totp_token]',
+    async run(helpers) {
+        const token = await jsonrpc('/totphook')
+        helpers.text(token);
+        helpers.click('button:contains("Log in")');
+    }
+}, {
+    content: "check we're logged in",
+    trigger: ".o_user_menu .dropdown-toggle",
+    run: 'click',
+}, {
+    content: "click the Log out button",
+    trigger: '.dropdown-item[data-menu=logout]',
+}, {
+    content: "check that we're back on the login page or go to it",
+    trigger: 'input#login, a:contains(Log in)'
+}, {
+    content: "input login again",
+    trigger: 'input#login',
+    run: 'text demo',
+}, {
+    content: 'input password again',
+    trigger: 'input#password',
+    run: 'text demo',
+}, {
+    content: "click da button again",
+    trigger: 'button:contains("Log in")',
+},  {
+    content: "check we're logged in without 2FA",
+    trigger: ".o_user_menu .dropdown-toggle",
+    run() {}
+},
+// now go and disable two-factor authentication would be annoying to do in a separate tour
+// because we'd need to login & totp again as HttpCase.authenticate can't
+// succeed w/ totp enabled
+...openUserProfileAtSecurityTab(),
+{
+    content: "Open totp wizard",
+    trigger: 'button[name=action_totp_disable]',
+}, {
+    content: "Check that we have to enter enhanced security mode and input password",
+    extra_trigger: 'div:contains("enter your password")',
+    trigger: '[name=password] input',
+    run: 'text demo',
+}, {
+    content: "Confirm",
+    trigger: "button:contains(Confirm Password)",
+},
+...openRoot(),
+...openUserProfileAtSecurityTab(),
+...closeProfileDialog({
+    content: "Check that the button has changed",
+    totp_state: false
+}),
+]});
+
+registry.category("web_tour.tours").add('totp_login_disabled', {
+    test: true,
+    url: '/',
+    steps: () => [{
+    content: "check that we're on the login page or go to it",
+    trigger: 'input#login, a:contains(Sign in)'
+}, {
+    content: "input login",
+    trigger: 'input#login',
+    run: 'text demo',
+}, {
+    content: 'input password',
+    trigger: 'input#password',
+    run: 'text demo',
+}, {
+    content: "click da button",
+    trigger: 'button:contains("Log in")',
+},
+// normally we'd end the tour here as it's all we care about but there are a
+// bunch of ongoing queries from the loading of the web client which cause
+// issues, so go and open the preferences / profile screen to make sure
+// everything settles down
+...openUserProfileAtSecurityTab(),
+// close the dialog if that makes sense
+...closeProfileDialog({})
+]});
+
+const columns = {};
+registry.category("web_tour.tours").add('totp_admin_disables', {
+    test: true,
+    url: '/web',
+    steps: () => [stepUtils.showAppsMenuItem(), {
+    content: 'Go to settings',
+    trigger: '[data-menu-xmlid="base.menu_administration"]'
+}, {
+    content: 'Wait for page',
+    trigger: '.o_menu_brand:contains("Settings")',
+    run() {}
+}, {
+    content: "Open Users menu",
+    trigger: '[data-menu-xmlid="base.menu_users"]'
+}, {
+    content: "Open Users view",
+    trigger: '[data-menu-xmlid="base.menu_action_res_users"]',
+    run(helpers) {
+        // funny story: the users view we're trying to reach, sometimes we're
+        // already there, but if we re-click the next step executes before the
+        // action has the time to re-load, the one after that doesn't, and our
+        // selection get discarded by the action reloading, so here try to
+        // see if we're already on the users action through the breadcrumb and
+        // just close the menu if so
+        const $crumb = $('.breadcrumb');
+        if ($crumb.text().indexOf('Users') === -1) {
+            // on general settings page, click menu
+            helpers.click();
+        } else {
+            // else close menu
+            helpers.click($('[data-menu-xmlid="base.menu_users"]'));
+        }
+    }
+}, {
+    content: "Find Demo User",
+    trigger: 'td.o_data_cell:contains("demo")',
+    run(helpers) {
+        const $titles = this.$anchor.closest('table').find('tr:first th');
+        for (let i=0; i<$titles.length; ++i) {
+            columns[$titles[i].getAttribute('data-name')] = i;
+        }
+        const $row = this.$anchor.closest('tr');
+        const sel = $row.find('.o_list_record_selector input[type=checkbox]');
+        helpers.click(sel);
+    }
+}, {
+    content: "Open Actions menu",
+    trigger: 'button.dropdown-toggle:contains("Action")'
+}, {
+    content: "Select totp remover",
+    trigger: 'span.dropdown-item:contains(Disable two-factor authentication)'
+}, { // enhanced security yo
+    content: "Check that we have to enter enhanced security mode & input password",
+    extra_trigger: 'div:contains("enter your password")',
+    trigger: '[name=password] input',
+    run: 'text admin',
+}, {
+    content: "Confirm",
+    trigger: "button:contains(Confirm Password)",
+}, {
+    content: "open the user's form",
+    trigger: "td.o_data_cell:contains(demo)",
+}, {
+    content: "go to Account security Tab",
+    trigger: "a.nav-link:contains(Account Security)",
+}, ...closeProfileDialog({
+    content: "check that demo user has been de-totp'd",
+    totp_state: false,
+}),
+]})
+
+return __exports;
+});
+;
+
+/********************************************************
+*  Filepath: /auth_totp_mail/static/tests/totp_flow.js  *
+*  Lines: 82                                            *
+********************************************************/
+odoo.define('@auth_totp_mail/../tests/totp_flow', ['@web/core/registry', '@web_tour/tour_service/tour_utils'], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module **/
+
+const { registry } = require("@web/core/registry");
+const { stepUtils } = require("@web_tour/tour_service/tour_utils");
+
+function openAccountSettingsTab() {
+    return [{
+        content: 'Go to settings',
+        trigger: '[data-menu-xmlid="base.menu_administration"]'
+    }, {
+        content: 'Wait for page',
+        trigger: '.o_menu_brand:contains("Settings")',
+        run: () => {}
+    }, {
+        content: "Open Users menu",
+        trigger: '[data-menu-xmlid="base.menu_users"]'
+    }, {
+        content: "Open Users view",
+        trigger: '[data-menu-xmlid="base.menu_action_res_users"]',
+        run: function (helpers) {
+            // funny story: the users view we're trying to reach, sometimes we're
+            // already there, but if we re-click the next step executes before the
+            // action has the time to re-load, the one after that doesn't, and our
+            // selection get discarded by the action reloading, so here try to
+            // see if we're already on the users action through the breadcrumb and
+            // just close the menu if so
+            const $crumb = $('.breadcrumb');
+            if ($crumb.text().indexOf('Users') === -1) {
+                // on general settings page, click menu
+                helpers.click();
+            } else {
+                // else close menu
+                helpers.click($('[data-menu-xmlid="base.menu_users"]'));
+            }
+        }
+    }];
+}
+
+registry.category("web_tour.tours").add('totp_admin_self_invite', {
+    test: true,
+    url: '/web',
+    steps: () => [stepUtils.showAppsMenuItem(), ...openAccountSettingsTab(), {
+    content: "open the user's form",
+    trigger: "td.o_data_cell:contains(admin)",
+}, {
+    content: "go to Account security Tab",
+    trigger: "a.nav-link:contains(Account Security)",
+}, {
+    content: "check that user cannot invite themselves to use 2FA.",
+    trigger: "body",
+    run: function () {
+        const inviteBtn = $('button:contains(Invite to use 2FA)')[0];
+        if (!inviteBtn) {
+            $('body').addClass('CannotInviteYourself');
+        }
+    }
+}, {
+    content: "check that user cannot invite themself.",
+    trigger: "body.CannotInviteYourself",
+    isCheck: true,
+}]});
+
+registry.category("web_tour.tours").add('totp_admin_invite', {
+    test: true,
+    url: '/web',
+    steps: () => [stepUtils.showAppsMenuItem(), ...openAccountSettingsTab(), {
+    content: "open the user's form",
+    trigger: "td.o_data_cell:contains(demo)",
+}, {
+    content: "go to Account security Tab",
+    trigger: "a.nav-link:contains(Account Security)",
+}, {
+    content: "check that demo user can be invited to use 2FA.",
+    trigger: "button:contains(Invite to use 2FA)",
+    isCheck: true,
+}]});
+
+return __exports;
+});
+;
+
+/************************************************************
+*  Filepath: /auth_totp_portal/static/tests/totp_portal.js  *
+*  Lines: 128                                               *
+************************************************************/
+odoo.define('@auth_totp_portal/../tests/totp_portal', ['@web/core/registry', '@web/core/network/rpc_service'], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module **/
+
+const { registry } = require("@web/core/registry");
+const { jsonrpc } = require("@web/core/network/rpc_service");
+
+registry.category("web_tour.tours").add('totportal_tour_setup', {
+    test: true,
+    url: '/my/security',
+    steps: () => [{
+    content: "Open totp wizard",
+    trigger: 'button#auth_totp_portal_enable',
+}, {
+    content: "Check that we have to enter enhanced security mode",
+    trigger: 'div:contains("enter your password")',
+    run: () => {},
+}, {
+    content: "Input password",
+    trigger: '[name=password]',
+    run: 'text portal', // FIXME: better way to do this?
+}, {
+    content: "Confirm",
+    trigger: "button:contains(Confirm Password)",
+}, {
+    content: "Check the wizard has opened",
+    trigger: 'li:contains("scan the barcode below")',
+    run: () => {}
+}, {
+    content: "Get secret from collapsed div",
+    trigger: 'a:contains("Cannot scan it?")',
+    run: async function(helpers) {
+        const secret = this.$anchor.closest('div').find('span[name="secret"]').text();
+        const token = await jsonrpc('/totphook', {
+            secret
+        });
+        helpers._text(helpers._get_action_values('input[name=code]'), token);
+        helpers._click(helpers._get_action_values('button.btn-primary:contains(Activate)'));
+    }
+}, {
+    content: "Check that the button has changed",
+    trigger: 'button:contains(Disable two-factor authentication)',
+    run: () => {}
+}]});
+
+registry.category("web_tour.tours").add('totportal_login_enabled', {
+    test: true,
+    url: '/',
+    steps: () => [{
+    content: "check that we're on the login page or go to it",
+    trigger: 'input#login, a:contains(Sign in)'
+}, {
+    content: "input login",
+    trigger: 'input#login',
+    run: 'text portal',
+}, {
+    content: 'input password',
+    trigger: 'input#password',
+    run: 'text portal',
+}, {
+    content: "click da button",
+    trigger: 'button:contains("Log in")',
+}, {
+    content: "expect totp screen",
+    trigger: 'label:contains(Authentication Code)',
+}, {
+    content: "input code",
+    trigger: 'input[name=totp_token]',
+    run: async function (helpers) {
+        const token = await jsonrpc('/totphook');
+        helpers._text(helpers._get_action_values(), token);
+        // FIXME: is there a way to put the button as its own step trigger without
+        //        the tour straight blowing through and not waiting for this?
+        helpers._click(helpers._get_action_values('button:contains("Log in")'));
+    }
+}, {
+    content: "check we're logged in",
+    trigger: "h3:contains(My account)",
+    run: () => {}
+}, {
+    content: "go back to security",
+    trigger: "a:contains(Security)",
+},{
+    content: "Open totp wizard",
+    trigger: 'button#auth_totp_portal_disable',
+}, {
+    content: "Check that we have to enter enhanced security mode",
+    trigger: 'div:contains("enter your password")',
+    run: () => {},
+}, {
+    content: "Input password",
+    trigger: '[name=password]',
+    run: 'text portal', // FIXME: better way to do this?
+}, {
+    content: "Confirm",
+    trigger: "button:contains(Confirm Password)",
+}, {
+    content: "Check that the button has changed",
+    trigger: 'button:contains(Enable two-factor authentication)',
+    run: () => {}
+}]});
+
+registry.category("web_tour.tours").add('totportal_login_disabled', {
+    test: true,
+    url: '/',
+    steps: () => [{
+    content: "check that we're on the login page or go to it",
+    trigger: 'input#login, a:contains(Sign in)'
+}, {
+    content: "input login",
+    trigger: 'input#login',
+    run: 'text portal',
+}, {
+    content: 'input password',
+    trigger: 'input#password',
+    run: 'text portal',
+}, {
+    content: "click da button",
+    trigger: 'button:contains("Log in")',
+}, {
+    content: "check we're logged in",
+    trigger: "h3:contains(My account)",
+    run: () => {}
+}]});
+
+return __exports;
+});
+;
+
+/***************************************************************
+*  Filepath: /sale_project/static/tests/tours/project_tour.js  *
+*  Lines: 27                                                   *
+***************************************************************/
+odoo.define('@sale_project/../tests/tours/project_tour', ['@web/core/registry', '@project/../tests/tours/project_tour', '@web/core/utils/patch'], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module */
+
+/**
+ * Add custom step to check allow_billable during project creation
+ * to be able to set a partner on project/tasks.
+ */
+const { registry } = require("@web/core/registry");
+require("@project/../tests/tours/project_tour");
+const { patch } = require("@web/core/utils/patch");
+
+patch(registry.category("web_tour.tours").get("project_test_tour"), {
+    steps() {
+        const originalSteps = super.steps();
+        const projectCreationStepIndex = originalSteps.findIndex((step) => step.id === "project_creation");
+        originalSteps.splice(projectCreationStepIndex, 0, {
+            trigger: "div[name='allow_billable'] input",
+        });
+
+        return originalSteps;
+    }
+})
+
+return __exports;
+});
+;
+
+/************************************************************************
+*  Filepath: /sale_timesheet/static/tests/tours/sale_timesheet_tour.js  *
+*  Lines: 323                                                           *
+************************************************************************/
+odoo.define('@sale_timesheet/../tests/tours/sale_timesheet_tour', ['@web/core/registry', '@web_tour/tour_service/tour_utils', '@odoo/owl'], function (require) {
+'use strict';
+let __exports = {};
+/** @odoo-module **/
+
+const { registry } = require("@web/core/registry");
+const { stepUtils } = require("@web_tour/tour_service/tour_utils");
+
+const { markup } = require("@odoo/owl");
+
+registry.category("web_tour.tours").add('sale_timesheet_tour', {
+    test: true,
+    url: '/web',
+    steps: () => [...stepUtils.goToAppSteps("sale.sale_menu_root", 'Go to the Sales App'),
+{
+    trigger: 'button.o_list_button_add',
+    content: 'Click on CREATE button to create a quotation with service products.',
+}, {
+    trigger: 'div[name="partner_id"] input',
+    content: 'Add the customer for this quotation (e.g. Brandon Freeman)',
+    run: 'text Brandon Freeman',
+}, {
+    trigger: 'div[name="partner_id"] ul > li:first-child > a:contains(Freeman)',
+    content: 'Select the first item on the autocomplete dropdown',
+},
+{
+    trigger: 'td.o_field_x2many_list_row_add > a:first-child',
+    content: 'Click on "Add a product" to add a new product. We will add a service product.',
+}, {
+    trigger: '.o_field_html[name="product_id"], .o_field_widget[name="product_template_id"] input',
+    content: markup('Select a prepaid service product <i>(e.g. Service Product (Prepaid Hours))</i>'),
+    run: 'text Service Product (Prepaid Hours)',
+}, {
+    trigger: 'ul.ui-autocomplete a:contains(Service Product (Prepaid Hours))',
+    content: 'Select the prepaid service product in the autocomplete dropdown',
+}, {
+    trigger: 'div[name="product_uom_qty"] input',
+    content: "Add 10 hours as ordered quantity for this product.",
+    run: 'text 10',
+}, {
+    trigger: '.o_field_widget[name=price_subtotal]:contains(2,500.00)',
+    run() {},
+}, {
+    trigger: 'div[name="name"] textarea:propValueContains(Service Product)',
+    run: () => {}
+}, {
+    trigger: 'button[name="action_confirm"]',
+    content: 'Click on Confirm button to create a sale order with this quotation.',
+}, {
+    content: 'Wait for the confirmation to finish. State should be "Sales Order"',
+    trigger: '.o_field_widget[name=state] .o_arrow_button_current:contains("Sales Order")',
+    isCheck: true,
+}, stepUtils.toggleHomeMenu(),
+...stepUtils.goToAppSteps("project.menu_main_pm", 'Go to the Project app.'),
+{
+    trigger: 'button.o-kanban-button-new',
+    content: 'Add a new project.',
+}, {
+    trigger: '.o_field_widget.o_project_name input',
+    content: 'Select your project name (e.g. Project for Freeman)',
+    run: 'text Project for Freeman',
+}, {
+    trigger: 'div[name="allow_billable"] input',
+    run: 'click',
+}, {
+    trigger: 'button[name="action_view_tasks"]',
+    content: 'Click on Create button to create and enter to this newest project.',
+}, {
+    trigger: 'div.o_kanban_header > div:first-child input',
+    content: 'Select a name of your kanban column (e.g. To Do)',
+    run: 'text To Do',
+}, {
+    trigger: 'button.o_kanban_add',
+    content: 'Click on Add button to create the column.',
+}, {
+    trigger: 'button.o-kanban-button-new',
+    content: 'Click on Create button to create a task into your project.',
+}, {
+    trigger: 'div[name="display_name"] > input',
+    content: 'Select the name of the task (e.g. Onboarding)',
+    run: 'text Onboarding',
+}, {
+    trigger: 'button.o_kanban_edit',
+    content: 'Click on Edit button to enter to the form view of the task.',
+    position: 'bottom',
+}, {
+    trigger: 'div[name="partner_id"] input',
+    content: markup('Select the customer of your Sales Order <i>(e.g. Brandon Freeman)</i>. Since we have a Sales Order for this customer with a prepaid service product which the remaining hours to deliver is greater than 0, the Sales Order Item in the task should be contain the Sales Order Item containing this prepaid service product.'),
+    run: 'text Brandon Freeman',
+}, {
+    trigger: 'div[name="partner_id"] ul > li:first-child > a:contains(Freeman)',
+    content: 'Select the customer in the autocomplete dropdown.',
+}, {
+    trigger: 'a.nav-link:contains(Timesheets)',
+    extra_trigger: 'div.o_notebook_headers',
+    content: 'Click on Timesheets page to log a timesheet',
+}, {
+    trigger: 'div[name="timesheet_ids"] td.o_field_x2many_list_row_add a[role="button"]',
+    content: 'Click on Add a line to create a new timesheet into the task.',
+}, {
+    trigger: '.o_field_x2many div[name="name"] input',
+    content: 'Enter a description for this timesheet',
+    run: 'text work',
+}, {
+    trigger: 'div[name="unit_amount"] input',
+    content: 'Enter one hour for this timesheet',
+    run: 'text 1',
+}, {
+    trigger: 'i.o_optional_columns_dropdown_toggle',
+    content: 'The so_line field should be hidden by default. We check if it is the case by adding this field in the timesheet list view',
+}, {
+    trigger: 'input[name="so_line"]',
+    content: 'Check the so_line field to display the column on the list view.',
+    run: function (actions) {
+        if (!this.$anchor.prop('checked')) {
+            actions.click(this.$anchor);
+        }
+    },
+}, {
+    trigger: 'button[name="action_view_so"]',
+    content: 'Click on this stat button to see the SO linked to the SOL of the task.',
+}, {
+    trigger: 'div[name="order_line"]',
+    content: 'Check if the quantity delivered is equal to 1 hour.',
+    run: function () {
+        const $header = this.$anchor.find('thead > tr');
+        if (!$header || $header.length === 0)
+            console.error('No Sales Order Item is found in the Sales Order.');
+        const tr = $header[0];
+        let index = -1;
+        for (let i = 0; i < tr.children.length; i++) {
+            const th = tr.children.item(i);
+            if (th.dataset && th.dataset.name === 'qty_delivered')
+                index = i;
+        }
+        const qtyDelivered = this.$anchor.find(`tbody > tr:first-child > td.o_data_cell:eq(${index})`).text();
+        if (qtyDelivered !== "1.00")
+            console.error('The quantity delivered on this Sales Order Item should be equal to 1.00 hour. qtyDelivered = ' + qtyDelivered);
+    },
+}, {
+    trigger: 'button[data-menu-xmlid="project.menu_project_config"]',
+    content: 'Click on the Configuration menu.',
+}, {
+    trigger: '.dropdown-item[data-menu-xmlid="project.menu_projects_config"]',
+    content: 'Select Configuration > Projects.',
+}, {
+    trigger: 'button.o_list_button_add',
+    content: 'Click on Create button to create a new project and see the different configuration available for the project.',
+}, {
+    trigger: 'a.nav-link[name="settings"]',
+    extra_trigger: 'div.o_notebook_headers',
+    content: 'Click on Settings page to check the allow_billable checkbox',
+}, {
+    trigger: 'div[name="allow_billable"] input',
+    content: 'Check the allow_billable',
+    run: function (actions) {
+        if (!this.$anchor.prop('checked')) {
+            actions.click(this.$anchor);
+        }
+    }
+}, {
+    trigger: 'div[name="partner_id"] input',
+    content: markup('Add the customer for this project to select an SO and SOL for this customer <i>(e.g. Brandon Freeman)</i>.'),
+    run: 'text Brandon Freeman',
+}, {
+    trigger: 'div[name="partner_id"] ul > li:first-child > a:contains(Freeman)',
+    content: 'Select the customer in the autocomplete dropdown',
+}, {
+    trigger: 'div[name="sale_line_id"] input',
+    content: 'Select a Sales Order Item as Default Sales Order Item for each task in this project.',
+    run: 'text S',
+}, {
+    trigger: '[name="sale_line_id"] ul.ui-autocomplete > li:first-child > a:not(:has(i.fa))',
+    content: 'Select the Sales Order Item in the autocomplete dropdown.',
+}, {
+    trigger: 'a.nav-link[name="billing_employee_rate"]',
+    extra_trigger: 'div.o_notebook_headers',
+    content: 'Click on Invoicing tab to configure the invoicing of this project.',
+}, {
+    trigger: 'div[name="sale_line_employee_ids"] td.o_field_x2many_list_row_add > a[role="button"]',
+    content: 'Click on Add a line on the mapping list view.',
+}, {
+    trigger: 'div[name="sale_line_employee_ids"] div[name="employee_id"] input',
+    content: 'Select an employee to link a Sales Order Item on his timesheets into this project.',
+    run: 'click',
+}, {
+    trigger: '[name="employee_id"] ul.ui-autocomplete > li:first-child > a:not(:has(i.fa))',
+    content: 'Select the first employee in the autocomplete dropdown',
+}, {
+    trigger: 'div[name="sale_line_employee_ids"] div[name="sale_line_id"] input',
+    content: 'Select the Sales Order Item to link to the timesheets of this employee.',
+    position: 'bottom',
+    run: 'text S',
+}, {
+    trigger: '[name=sale_line_id] ul.ui-autocomplete > li:first-child > a:not(:has(i.fa))',
+    content: 'Select the first Sales Order Item in the autocomplete dropdown.',
+}, {
+    trigger: 'h1 > div[name="name"] > div > textarea',
+    content: 'Set Project name',
+    run: 'text Project with employee mapping',
+}, {
+    trigger: '[data-menu-xmlid="project.menu_projects"]',
+    content: 'Select Project main menu',
+}, {
+    trigger: '.o_kanban_record:contains("Project for Freeman") .o_dropdown_kanban .dropdown-toggle',
+    content: 'Open the project dropdown',
+}, {
+    trigger: '.o_kanban_record:contains("Project for Freeman") .dropdown-menu a:contains("Settings")',
+    content: 'Start editing the project',
+    // timer: 300,
+}, {
+    trigger: 'div[name="partner_id"] input',
+    content: markup('Add the customer for this project to select an SO and SOL for this customer <i>(e.g. Brandon Freeman)</i>.'),
+    run: 'text Brandon Freeman',
+}, {
+    trigger: 'div[name="partner_id"] ul > li:first-child > a:contains(Freeman)',
+    content: 'Select the customer in the autocomplete dropdown',
+}, {
+    trigger: 'a.nav-link[name="settings"]',
+    extra_trigger: 'div.o_notebook_headers',
+    content: 'Click on Settings tab to configure this project.',
+}, {
+    trigger: 'div[name="sale_line_id"] input',
+    content: 'Select the first sale order of the list',
+    run: 'text Prepaid',
+}, {
+    trigger: 'ul.ui-autocomplete > li:first-child > a:not(:has(i.fa))',
+    content: 'Select the first item on the autocomplete dropdown',
+}, {
+    trigger: '.o_back_button',
+    content: 'Go back to the kanban view the project created',
+}, {
+    trigger: '.oe_kanban_global_click :contains("Project for Freeman")',
+    content: 'Open the project',
+}, {
+    trigger: ".o_project_updates_breadcrumb",
+    content: 'Open Updates',
+}, {
+    trigger: ".o_rightpanel_section[name='sales'] .o_rightpanel_title:contains('Sales')",
+    content: 'Check the user sees Sales section',
+    isCheck: true,
+}, {
+    trigger: ".o_rightpanel_section[name='sales'] .o_rightpanel_data:contains('Prepaid Hours')",
+    content: 'Check the user sees a line in the Sales section',
+    // timer: 300,
+    isCheck: true,
+}, {
+    trigger: ".o_rightpanel_section .o-form-buttonbox .o_stat_text:contains('Sales Orders')",
+    content: 'Check the user sees Sales Orders Stat Button',
+    isCheck: true,
+}, {
+    trigger: ".o_rightpanel_section[name='profitability'] .o_rightpanel_title:contains('Profitability')",
+    content: 'Check the user sees Profitability section',
+    isCheck: true,
+}, {
+    trigger: ".o_rightpanel_section[name='profitability'] .o_rightpanel_data > .o_rightpanel_subsection:eq(0) > table > thead > tr > th:eq(0):contains('Revenues')",
+    content: 'Check the user sees Profitability subsection row',
+    isCheck: true,
+}, {
+    trigger: ".o_rightpanel_section[name='profitability'] .o_rightpanel_data > .o_rightpanel_subsection:eq(1) > table > thead > tr > th:eq(0):contains('Costs')",
+    content: 'Check the user sees Profitability subsection row',
+    isCheck: true,
+}, {
+    trigger: ".o_rightpanel_section[name='profitability'] .o_rightpanel_data > .o_rightpanel_subsection:eq(2) > table > thead > tr > th:eq(0):contains('Margin')",
+    content: 'Check the user sees Profitability subsection row',
+    isCheck: true,
+}, {
+    trigger: ".o_rightpanel_section[name='milestones'] .o_rightpanel_title:contains('Milestones')",
+    content: 'Check the user sees Milestones section',
+}, {
+    trigger: ".o_add_milestone a",
+    content: "Add a first milestone",
+}, {
+    trigger: "div.o_field_widget[name=name] input",
+    content: "Edit new Milestone",
+    run: 'text New milestone',
+}, {
+    trigger: "input[data-field=deadline]",
+    content: "Edit new Milestone",
+    run: 'text 12/12/2099',
+}, {
+    trigger: ".modal-footer button",
+    content: "Save new Milestone",
+}, {
+    trigger: ".o-kanban-button-new",
+    content: "Create new Project Update",
+}, {
+    trigger: "div.o_field_widget[name=name] input",
+    content: "Give a name to Project Update",
+    run: 'text New update',
+}, {
+    trigger: ".o_field_widget[name=description] h3:contains('Sales')",
+    content: "Sales title must be in description in description",
+    isCheck: true,
+    }, {
+    trigger: ".o_field_widget[name=description] td:contains('Prepaid Hours')",
+    content: "Prepaid Hours title must be in description",
+    isCheck: true,
+}, {
+    trigger: ".o_field_widget[name=description] h3:contains('Profitability')",
+    content: "Profitability title must be in description",
+    isCheck: true,
+}, {
+    trigger: ".o_field_widget[name=description] h3:contains('Milestones')",
+    content: "Milestones title must be in description",
+    isCheck: true,
+},
+// Those steps are currently needed in order to prevent the following issue:
+// "Form views in edition mode are automatically saved when the page is closed, which leads to stray network requests and inconsistencies."
+{
+    trigger: '.o_back_button',
+    content: 'Go back to the kanban view and the project update will be added on that view',
+}, {
+    trigger: '.o_controller_with_rightpanel',
+    content: 'Check the kanban view of project update is rendered to be sure the user leaves the form view and the project update is created',
+    run: function() {},
+},
+stepUtils.toggleHomeMenu(),
+...stepUtils.goToAppSteps("project.menu_main_pm", 'Go to the Project app.'),
+]});
+
+return __exports;
+});
+
+
+//# sourceMappingURL=/web/assets/5b03a9c/web.assets_tests.js.map

@@ -1,0 +1,458 @@
+
+
+/* /web/static/src/webclient/actions/reports/reset.min.css */
+
+/*
+
+HTML5 CSS Reset
+Based on Eric Meyer's CSS Reset
+and html5doctor.com HTML5 Reset
+
+Copyright (c) 2011 736 Computing Services Limited
+Released under the MIT license. http://opensource.736cs.com/licenses/mit
+
+*/
+
+html,
+body,
+div,
+span,
+applet,
+object,
+iframe,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+blockquote,
+pre,
+a,
+abbr,
+acronym,
+address,
+big,
+cite,
+code,
+del,
+dfn,
+em,
+font,
+img,
+ins,
+kbd,
+q,
+s,
+samp,
+small,
+strike,
+strong,
+sub,
+sup,
+tt,
+var,
+b,
+i,
+center,
+dl,
+dt,
+dd,
+ol,
+ul,
+li,
+fieldset,
+form,
+label,
+legend,
+table,
+caption,
+tbody,
+tfoot,
+thead,
+tr,
+th,
+td,
+article,
+aside,
+audio,
+canvas,
+details,
+figcaption,
+figure,
+footer,
+header,
+hgroup,
+mark,
+menu,
+meter,
+nav,
+output,
+progress,
+section,
+summary,
+time,
+video {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  font-size: 100%;
+  vertical-align: baseline;
+  background: transparent;
+}
+
+body {
+  line-height: 1;
+}
+
+article,
+aside,
+dialog,
+figure,
+footer,
+header,
+hgroup,
+nav,
+section,
+blockquote {
+  display: block;
+}
+
+nav ul {
+  list-style: none;
+}
+
+ol {
+  list-style: decimal;
+}
+
+ul {
+  list-style: disc;
+  padding-right: 40px;
+}
+
+ul ul {
+  list-style: circle;
+}
+
+blockquote:before,
+blockquote:after,
+q:before,
+q:after {
+  content: "";
+  content: none;
+}
+
+ins {
+  text-decoration: underline;
+}
+
+del {
+  text-decoration: line-through;
+}
+
+mark {
+  background: none;
+}
+
+abbr[title],
+dfn[title] {
+  border-bottom: 1px dotted #000;
+  cursor: help;
+}
+
+/* tables still need 'cellspacing="0"' in the markup */
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+hr {
+  display: block;
+  height: 1px;
+  border: 0;
+  border-top: 1px solid #ccc;
+  margin: 1em 0;
+  padding: 0;
+}
+
+input[type="submit"],
+input[type="button"],
+button {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+input,
+select,
+a img {
+  vertical-align: middle;
+}
+
+
+
+/* /account/static/src/css/report_invoice.css */
+
+#payment_terms_note_id > p {
+    margin-bottom: 0 !important;
+}
+
+.avoid-page-break-inside {
+    page-break-inside: avoid;
+}
+
+.justify-text {
+    text-align:justify;
+    text-justify:inter-word;
+}
+
+#qrcode_odoo_logo {
+    -webkit-transform:translate(50%,-50%);
+    height:18%;
+    width:18%;
+}
+
+.tax_computation_company_currency {
+    margin-bottom: 5px;
+}
+
+/* /hr_skills/static/src/scss/report_employee_cv.scss */
+
+div.o_employee_cv {
+  font-family: 'Roboto', sans-serif;
+  color: #16171a;
+  font-size: 14px;
+  padding: 0;
+  margin: 0;
+  position: relative;
+}
+
+div.o_employee_cv h1, div.o_employee_cv h2, div.o_employee_cv h3, div.o_employee_cv h4, div.o_employee_cv h5, div.o_employee_cv h6 {
+  font-weight: bolder;
+}
+
+div.o_employee_cv a {
+  text-decoration: none;
+}
+
+div.o_employee_cv p {
+  line-height: 1.5;
+}
+
+div.o_employee_cv:not(:last-child) .o_new_page {
+  page-break-after: always;
+}
+
+div.o_employee_cv .o_sidebar {
+  color: #fff;
+  margin-top: -150px;
+  margin-right: 500px;
+  width: inherit;
+  display: inline-block;
+  max-width: 50%;
+  min-width: 50%;
+  box-sizing: border-box;
+  vertical-align: top;
+}
+
+div.o_employee_cv .o_sidebar a {
+  color: #fff;
+}
+
+div.o_employee_cv .o_sidebar .o_profile {
+  padding: 30px;
+  padding-top: 15px;
+  background: rgba(0, 0, 0, 0.2);
+  text-align: center;
+  color: #fff;
+}
+
+div.o_employee_cv .o_sidebar .o_profile_name {
+  font-size: 32px;
+  font-weight: bolder;
+  margin-bottom: 10px;
+}
+
+div.o_employee_cv .o_sidebar .o_profile_job {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 20px;
+  font-weight: bold;
+  margin-top: 0;
+}
+
+div.o_employee_cv .o_sidebar .o_profile_image {
+  margin-bottom: 15px;
+  width: 100px;
+  float: left;
+}
+
+div.o_employee_cv .o_sidebar .o_social {
+  list-style-type: none;
+}
+
+div.o_employee_cv .o_sidebar .o_social li {
+  margin-bottom: 15px;
+}
+
+div.o_employee_cv .o_sidebar .o_social li:last-child {
+  margin-bottom: 0;
+}
+
+div.o_employee_cv .o_sidebar .o_sidebar_section {
+  padding: 15px;
+}
+
+div.o_employee_cv .o_sidebar .o_sidebar_title {
+  text-transform: uppercase;
+  font-size: 16px;
+  font-weight: bold;
+  margin-top: 0;
+  margin-bottom: 15px;
+}
+
+div.o_employee_cv .o_sidebar .o_sidebar_education .o_sidebar_education_degree {
+  font-size: 14px;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+div.o_employee_cv .o_sidebar .o_sidebar_education .o_sidebar_education_line {
+  margin-bottom: 15px;
+  overflow-wrap: break-word;
+}
+
+div.o_employee_cv .o_sidebar .o_sidebar_education .o_sidebar_education_line:last-child {
+  margin-bottom: 0;
+}
+
+div.o_employee_cv .o_sidebar .o_sidebar_education .o_sidebar_education_description {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: bold;
+  margin-bottom: 0px;
+  margin-top: 0;
+  font-size: 14px;
+}
+
+div.o_employee_cv .o_sidebar .o_sidebar_education .o_sidebar_education_description_year {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: bold;
+  margin-bottom: 0px;
+}
+
+div.o_employee_cv .o_sidebar .o_sidebar_language .o_sidebar_language_level {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+div.o_employee_cv .o_sidebar .o_sidebar_list {
+  margin-bottom: 0;
+}
+
+div.o_employee_cv .o_sidebar .o_sidebar_list li {
+  margin-bottom: 10px;
+}
+
+div.o_employee_cv .o_sidebar .o_sidebar_list li:last-child {
+  margin-bottom: 0;
+}
+
+div.o_employee_cv .o_company {
+  width: inherit;
+  display: inline-block;
+  max-width: 49%;
+  min-width: 49%;
+  box-sizing: border-box;
+  vertical-align: top;
+  padding-right: 30px;
+}
+
+div.o_employee_cv .o_main_panel {
+  background: #fff;
+  max-width: 100%;
+  min-width: 100%;
+  display: inline-block;
+  padding: 5px 30px 0 30px;
+  box-sizing: border-box;
+  vertical-align: top;
+}
+
+div.o_employee_cv .o_main_panel .o_main_panel_title {
+  text-transform: uppercase;
+  font-size: 20px;
+  font-weight: bold;
+  position: relative;
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+div.o_employee_cv .o_main_panel .o_main_panel_title .o_main_panel_icon {
+  width: 30px;
+  height: 30px;
+  margin-left: 8px;
+  display: inline-block;
+  color: #fff;
+  border-radius: 50%;
+  background-clip: padding-box;
+  text-align: center;
+  font-size: 16px;
+  position: relative;
+  top: -2px;
+  padding-top: 2px;
+}
+
+div.o_employee_cv .o_main_panel .o_main_panel_title .o_main_panel_icon fa {
+  font-size: 14px;
+  margin-top: 6px;
+}
+
+div.o_employee_cv .o_main_panel .o_main_panel_resume_title {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 0;
+  width: 100%;
+}
+
+div.o_employee_cv .o_main_panel .o_main_panel_resume_title .o_main_panel_resume_title_job {
+  display: inline-block;
+}
+
+div.o_employee_cv .o_main_panel .o_main_panel_resume_title .o_main_panel_resume_title_dates {
+  float: left;
+  white-space: nowrap;
+}
+
+div.o_employee_cv .o_main_panel .o_main_panel_resume_job {
+  color: #16171a;
+  font-size: 16px;
+  margin-top: 0;
+  margin-bottom: 0;
+  font-weight: bold;
+}
+
+div.o_employee_cv .o_main_panel .o_main_panel_resume_year {
+  left: 0;
+  top: 0;
+  color: #3b4757;
+  position: static;
+  display: block;
+  margin-top: 5px;
+}
+
+div.o_employee_cv .o_main_panel_skills .o_main_panel_skill_line:not(:last-of-type) {
+  margin-bottom: 15px;
+}
+
+div.o_employee_cv .o_main_panel_skills .o_main_panel_skill_name {
+  font-size: 14px;
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+div.o_employee_cv .o_main_panel_skills .o_main_panel_skill_progress_bar {
+  height: 12px;
+  background: #f5f5f5;
+  border-radius: 2px;
+  background-clip: padding-box;
+}
+/*# sourceMappingURL=/web/assets/122c675/web.report_assets_pdf.rtl.css.map */

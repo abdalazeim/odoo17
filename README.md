@@ -3,7 +3,7 @@
 [![Help](https://img.shields.io/badge/master-help-875A7B.svg?style=flat&colorA=8F8F8F)](https://www.odoo.com/forum/help-1)
 [![Nightly Builds](https://img.shields.io/badge/master-nightly-875A7B.svg?style=flat&colorA=8F8F8F)](https://nightly.odoo.com/)
 
-Odoo
+# Odoo
 ----
 
 Odoo is a suite of web based open source business apps.
@@ -21,7 +21,7 @@ The main Odoo Apps include an <a href="https://www.odoo.com/page/crm">Open Sourc
 <a href="https://www.odoo.com/">...</a>
 
 # Additional mods from me
-# # <a href="https://apps.odoo.com/apps/modules/17.0/om_account_accountant">Billing &amp;Full Accounting</a>,
+## <a href="https://apps.odoo.com/apps/modules/17.0/om_account_accountant">Billing &amp;Full Accounting</a>,
 
 
 Getting started with Odoo

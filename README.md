@@ -20,8 +20,9 @@ The main Odoo Apps include an <a href="https://www.odoo.com/page/crm">Open Sourc
 <a href="https://www.odoo.com/app/manufacturing">Manufacturing</a>,
 <a href="https://www.odoo.com/">...</a>
 
-Odoo Apps can be used as stand-alone applications, but they also integrate seamlessly so you get
-a full-featured <a href="https://www.odoo.com">Open Source ERP</a> when you install several Apps.
+Additional mods from me
+<a href="https://apps.odoo.com/apps/modules/17.0/om_account_accountant">Billing &amp; Accounting</a>,
+
 
 Getting started with Odoo
 -------------------------

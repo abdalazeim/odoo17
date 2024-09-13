@@ -97,6 +97,34 @@ The main Odoo Apps include an <a href="https://www.odoo.com/page/crm">Open Sourc
 ## xmlrpc_port = 8069
 ## logfile = /var/log/odoo17/odoo17.log
 ## addons_path = /opt/odoo17/addons,/opt/odoo17/odoo17-custom-addons
+# Step 4 – Create a Systemd File for Odoo
+# You will also need to create a system file to manage the Odoo service.
+## sudo nano /etc/systemd/system/odoo17.service
+### Add the following lines:
+## [Unit]
+## Description=odoo17
+## After=network.target postgresql@14-main.service
+
+## [Service]
+## Type=simple
+## SyslogIdentifier=odoo17
+## PermissionsStartOnly=true
+## User=odoo17
+## Group=odoo17
+## ExecStart=/opt/odoo17/odoo17-venv/bin/python3 /opt/odoo17/odoo-bin -c /etc/odoo17.conf
+## StandardOutput=journal+console
+
+## [Install]
+## WantedBy=multi-user.target
+# Save the file, then reload the systemd daemon.
+## sudo systemctl daemon-reload
+# Now, start and enable the Odoo service.
+## sudo systemctl start odoo17 
+# Step 5 – Access Odoo Web Interface
+# At this point, Odoo has started listening on port 8069. You can now access it using the URL http://your-server-ip:8069. You # # will see the following screen.
+
+
+
 
 
 

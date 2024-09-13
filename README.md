@@ -43,5 +43,22 @@ The main Odoo Apps include an <a href="https://www.odoo.com/page/crm">Open Sourc
 ## sudo npm install -g less less-plugin-clean-css
 # Next, install the node-less package.
 ## sudo apt-get install -y node-less
+# Next, download wkhtmltopdf package and install it using the following command:
+## sudo apt install wkhtmltopdf -y
+## sudo wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.bionic_amd64.deb
+## sudo dpkg -i wkhtmltox_0.12.6-1.bionic_amd64.deb
+## sudo apt install -f
+# Step 2 – Install PostgreSQL
+# Odoo uses PostgreSQL as a database backend. You can install it using the following command
+## sudo apt-get install postgresql -y
+## sudo systemctl status postgresql
+## sudo -u postgres psql
+## createuser --createdb --username postgres --no-createrole --no-superuser --pwprompt odoo17
+## psql
+## ALTER USER odoo17 WITH SUPERUSER;
+## \q
+## exit
+
+
 
 To learn the software, we recommend the <a href="https://www.odoo.com/slides">Odoo eLearning</a>, or <a href="https://www.odoo.com/page/scale-up-business-game">Scale-up</a>, the <a href="https://www.odoo.com/page/scale-up-business-game">business game</a>. Developers can start with <a href="https://www.odoo.com/documentation/17.0/developer/howtos.html">the developer tutorials</a>

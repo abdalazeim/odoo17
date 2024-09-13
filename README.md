@@ -58,7 +58,11 @@ The main Odoo Apps include an <a href="https://www.odoo.com/page/crm">Open Sourc
 ## ALTER USER odoo17 WITH SUPERUSER;
 ## \q
 ## exit
-
+# Next, create a user for Odoo using the following command:
+# First, log in as an Odoo user and download the Odoo 17 using the following command:
+## useradd -m -U -r -d /opt/odoo17 -s /bin/bash odoo17
+## su - odoo17	
+## git clone https://github.com/abdalazeim/odoo17 --depth 1 --branch 17.0 /opt/odoo17
 
 
 To learn the software, we recommend the <a href="https://www.odoo.com/slides">Odoo eLearning</a>, or <a href="https://www.odoo.com/page/scale-up-business-game">Scale-up</a>, the <a href="https://www.odoo.com/page/scale-up-business-game">business game</a>. Developers can start with <a href="https://www.odoo.com/documentation/17.0/developer/howtos.html">the developer tutorials</a>

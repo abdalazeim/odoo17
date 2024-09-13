@@ -52,6 +52,7 @@ The main Odoo Apps include an <a href="https://www.odoo.com/page/crm">Open Sourc
 # Odoo uses PostgreSQL as a database backend. You can install it using the following command
 ## sudo apt-get install postgresql -y
 ## sudo systemctl status postgresql
+## sudo su - postgres -c "createuser -s odoo17"
 ## sudo -u postgres psql
 ## createuser --createdb --username postgres --no-createrole --no-superuser --pwprompt odoo17
 ## psql

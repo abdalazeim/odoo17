@@ -89,14 +89,14 @@ The main Odoo Apps include an <a href="https://www.odoo.com/page/crm">Open Sourc
 ## sudo nano /etc/odoo17.conf
 ### Add the following lines:
 ## [options]
-admin_passwd = admin@123
-db_host = False
-db_port = False
-db_user = odoo17
-db_password = False
-xmlrpc_port = 8069
-logfile = /var/log/odoo17/odoo17.log
-addons_path = /opt/odoo17/addons,/opt/odoo17/odoo17-custom-addons
+## admin_passwd = admin@123
+## db_host = False
+## db_port = False
+## db_user = odoo17
+## db_password = False
+## xmlrpc_port = 8069
+## logfile = /var/log/odoo17/odoo17.log
+## addons_path = /opt/odoo17/addons,/opt/odoo17/odoo17-custom-addons
 
 
 

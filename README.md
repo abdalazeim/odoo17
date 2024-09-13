@@ -23,6 +23,11 @@ The main Odoo Apps include an <a href="https://www.odoo.com/page/crm">Open Sourc
 # Additional mods from me
 ## <a href="https://apps.odoo.com/apps/modules/17.0/om_account_accountant">Billing &amp;Full Accounting</a>,
 ## <a href= "https://apps.odoo.com/apps/modules/17.0/auto_database_backup">Auto Database Backup</a>,
+## <a href= "https://apps.odoo.com/apps/modules/17.0/ohrms_core">Open HRMS Core</a>,
+## <a href= "https://apps.odoo.com/apps/modules/17.0/bi_print_journal_entriesp">Print Journal Entries Report in Odoo</a>,
+## <a href= "https://apps.odoo.com/apps/modules/17.0/project_task_report_app">Project and Task Report in Odoo</a>,
+
+
 
 
 

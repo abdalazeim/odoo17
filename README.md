@@ -20,8 +20,8 @@ The main Odoo Apps include an <a href="https://www.odoo.com/page/crm">Open Sourc
 <a href="https://www.odoo.com/app/manufacturing">Manufacturing</a>,
 <a href="https://www.odoo.com/">...</a>
 
-Additional mods from me
-<a href="https://apps.odoo.com/apps/modules/17.0/om_account_accountant">Billing &amp; Accounting</a>,
+# Additional mods from me
+# # <a href="https://apps.odoo.com/apps/modules/17.0/om_account_accountant">Billing &amp;Full Accounting</a>,
 
 
 Getting started with Odoo

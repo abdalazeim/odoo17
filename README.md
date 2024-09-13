@@ -36,6 +36,12 @@ The main Odoo Apps include an <a href="https://www.odoo.com/page/crm">Open Sourc
 ## Step 1 – Install Required Dependencies 
 ### Odoo is a Python-based software
 ### sudo apt-get install -y python3-pip python3-dev python3-venv libxml2-dev libxslt1-dev zlib1g-dev libsasl2-dev libldap2-dev build-essential libssl-dev libffi-dev libmysqlclient-dev libjpeg-dev libpq-dev libjpeg8-dev liblcms2-dev libblas-dev libatlas-base-dev -y
-
+### Next, install the NPM package manager.
+### sudo apt install nodejs
+### sudo apt-get install -y npm
+### Then, install other dependencies using NPM.
+### sudo npm install -g less less-plugin-clean-css
+### Next, install the node-less package.
+### apt-get install -y node-less
 
 To learn the software, we recommend the <a href="https://www.odoo.com/slides">Odoo eLearning</a>, or <a href="https://www.odoo.com/page/scale-up-business-game">Scale-up</a>, the <a href="https://www.odoo.com/page/scale-up-business-game">business game</a>. Developers can start with <a href="https://www.odoo.com/documentation/17.0/developer/howtos.html">the developer tutorials</a>

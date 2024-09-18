@@ -63,7 +63,7 @@ The main Odoo Apps include an <a href="https://www.odoo.com/page/crm">Open Sourc
 # First, log in as an Odoo user and download the Odoo 17 using the following command:
 ## useradd -m -U -r -d /opt/odoo17 -s /bin/bash odoo17
 ## su - odoo17	
-## git clone https://github.com/abdalazeim/odoo17 --depth 1 --branch 17.0 /opt/odoo17
+## sudo git clone https://www.github.com/abdalazeim/odoo17 --depth 1 --branch 17.0 /opt/odoo17/
 # Next, create a Python virtual environment for Odoo
 ## cd /opt/odoo17
 ## python3 -m venv odoo17-venv

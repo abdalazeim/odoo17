@@ -135,8 +135,18 @@ The main Odoo Apps include an <a href="https://www.odoo.com/page/crm">Open Sourc
 
 
 
+- **Open HRMS Core**:
 
+     ![ScrennShot](https://github.com/abdalazeim/odoo17/blob/17.0/3.png)
 
+  - **Billing &Full Accounting**:
 
+     ![ScrennShot](https://github.com/abdalazeim/odoo17/blob/17.0/4.png)
+
+- **Auto Database Backup**:
+
+     ![ScrennShot](https://github.com/abdalazeim/odoo17/blob/17.0/5.png)
+
+  
 
 To learn the software, we recommend the <a href="https://www.odoo.com/slides">Odoo eLearning</a>, or <a href="https://www.odoo.com/page/scale-up-business-game">Scale-up</a>, the <a href="https://www.odoo.com/page/scale-up-business-game">business game</a>. Developers can start with <a href="https://www.odoo.com/documentation/17.0/developer/howtos.html">the developer tutorials</a>

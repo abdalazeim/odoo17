@@ -124,6 +124,15 @@ The main Odoo Apps include an <a href="https://www.odoo.com/page/crm">Open Sourc
 # Step 5 – Access Odoo Web Interface
 # At this point, Odoo has started listening on port 8069. You can now access it using the URL http://your-server-ip:8069. You # # will see the following screen.
 
+- **Access Odoo Web Interface**:
+
+     ![ScrennShot](https://github.com/abdalazeim/odoo17/blob/17.0/Screenshot%202024-09-18%20210855.png)
+
+  - **The Odoo dashboard**:
+
+     ![ScrennShot](https://github.com/abdalazeim/odoo17/blob/17.0/Screenshot%202024-09-18%20211112.png)
+
+
 
 
 
